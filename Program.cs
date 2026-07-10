@@ -10,10 +10,10 @@ namespace LegacyOrderService
         {
             Console.WriteLine("Welcome to Order Processor!");
             Console.WriteLine("Enter customer name:");
-            string name = Console.ReadLine();
+            string? name = Console.ReadLine() ?? string.Empty; //TODO Improve on validation.
 
             Console.WriteLine("Enter product name:");
-            string product = Console.ReadLine();
+            string product = Console.ReadLine() ?? string.Empty; //TODO Improve on validation.
             var productRepo = new ProductRepository();
             double price = productRepo.GetPrice(product);
 
@@ -33,11 +33,11 @@ namespace LegacyOrderService
 
             Console.WriteLine("Processing order...");
 
-            Order order = new Order();
-            order.CustomerName = name;
-            order.ProductName = product;
-            order.Quantity = qty;
-            order.Price = price; //storing unit price in repository!
+            Order order = new Order(
+            CustomerName: name,
+            ProductName: product,
+            Quantity: qty,
+            Price: price); //storing unit price in repository!
 
             double total = order.Quantity * order.Price;
 
