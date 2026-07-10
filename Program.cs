@@ -1,6 +1,7 @@
 using System;
 using LegacyOrderService.Models;
 using LegacyOrderService.Data;
+using Microsoft.Extensions.Logging;
 
 namespace LegacyOrderService
 {
@@ -8,11 +9,13 @@ namespace LegacyOrderService
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Welcome to Order Processor!");
-            Console.WriteLine("Enter customer name:");
+            var logger = InitialiseAndGetLogger();
+
+            logger.LogInformation("Welcome to Order Processor!");
+            logger.LogInformation("Enter customer name:");
             string? name = Console.ReadLine() ?? string.Empty; //TODO Improve on validation.
 
-            Console.WriteLine("Enter product name:");
+            logger.LogInformation("Enter product name:");
             string product = Console.ReadLine() ?? string.Empty; //TODO Improve on validation.
             var productRepo = new ProductRepository();
             double price = productRepo.GetPrice(product);
@@ -22,16 +25,16 @@ namespace LegacyOrderService
             bool quantityValid = false;
             while (!quantityValid)
             {
-                Console.WriteLine("Enter quantity greater zero:");
+                logger.LogInformation("Enter quantity greater zero:");
                 string qtyInput = Console.ReadLine() ?? "0";
                 quantityValid = Int32.TryParse(qtyInput, out qty) && qty > 0;
                 if (!quantityValid)
                 {
-                    Console.WriteLine("Quantity is invalud. The quantity must be a whole number greater than 0.");
+                    logger.LogInformation("Quantity is invalud. The quantity must be a whole number greater than 0.");
                 }
             }
 
-            Console.WriteLine("Processing order...");
+            logger.LogInformation("Processing order...");
 
             Order order = new Order(
             CustomerName: name,
@@ -41,16 +44,26 @@ namespace LegacyOrderService
 
             double total = order.Quantity * order.Price;
 
-            Console.WriteLine("Order complete!");
-            Console.WriteLine("Customer: " + order.CustomerName);
-            Console.WriteLine("Product: " + order.ProductName);
-            Console.WriteLine("Quantity: " + order.Quantity);
-            Console.WriteLine("Total: $" + total); //displaying total price!
+            logger.LogInformation("Order complete!");
+            logger.LogInformation("Customer: " + order.CustomerName);
+            logger.LogInformation("Product: " + order.ProductName);
+            logger.LogInformation("Quantity: " + order.Quantity);
+            logger.LogInformation("Total: $" + total); //displaying total price!
 
-            Console.WriteLine("Saving order to database...");
+            logger.LogInformation("Saving order to database...");
             var repo = new OrderRepository();
             repo.Save(order);
-            Console.WriteLine("Done.");
+            logger.LogInformation("Done.");
+        }
+
+        private static ILogger InitialiseAndGetLogger()
+        {
+            using var loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder.AddConsole();
+        });
+
+            return loggerFactory.CreateLogger<Program>();
         }
     }
 }
