@@ -16,6 +16,11 @@ You must
 1. Improve performance, resilience, scalability and testability
 1. Make decisions based on real-world engineering tradeoffs
 
+(Some definitions, in case you do not know:
+Resilience = the ability to spring back to an original form after having been squeezed, stretched, etc.; the ability to recover quickly from illness, misfortune, troubles, or the like.
+Scalability = the ability of something, esp a computer system, to adapt to increased demands
+)
+
 # Branches
 * `development` this branch has the latest changes. It always compiles.
 * `dev/123_branch_name` All development work goes under `dev`. The branch name should start with a Github issue number followed by an underscore and then a short description of the branch in snake_case.
