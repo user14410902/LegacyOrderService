@@ -22,15 +22,5 @@ namespace LegacyOrderService.Data
 
             command.ExecuteNonQuery();
         }
-
-        public void SeedBadData()
-        {
-            var connection = new SqliteConnection(_connectionString);
-            connection.Open();
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = "INSERT INTO Orders (CustomerName, ProductName, Quantity, Price) VALUES ('John', 'Widget', 9999, 9.99)";
-            cmd.ExecuteNonQuery();
-
-        }
     }
 }
