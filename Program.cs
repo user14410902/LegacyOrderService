@@ -18,8 +18,18 @@ namespace LegacyOrderService
             double price = productRepo.GetPrice(product);
 
 
-            Console.WriteLine("Enter quantity:");
-            int qty = Convert.ToInt32(Console.ReadLine());
+            int qty = 0;
+            bool quantityValid = false;
+            while (!quantityValid)
+            {
+                Console.WriteLine("Enter quantity greater zero:");
+                string qtyInput = Console.ReadLine() ?? "0";
+                quantityValid = Int32.TryParse(qtyInput, out qty) && qty > 0;
+                if (!quantityValid)
+                {
+                    Console.WriteLine("Quantity is invalud. The quantity must be a whole number greater than 0.");
+                }
+            }
 
             Console.WriteLine("Processing order...");
 
