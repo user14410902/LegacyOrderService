@@ -52,3 +52,9 @@ This fixes the total price displayed after the user enters a product and quantit
 * Ensure commit messages are linked to an issue in Github by starting the commit message with #123 where 123 is the issue number.
 * After the issue have a short description.
 * After the short description include details if required.
+
+# Building
+`dotnet build`
+
+# Running
+`dotnet run`
