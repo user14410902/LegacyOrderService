@@ -16,9 +16,6 @@ namespace LegacyOrderService.Data
 
         public double GetPrice(string productName)
         {
-            // Simulate an expensive lookup
-            Thread.Sleep(500);
-
             if (_productPrices.TryGetValue(productName, out var price))
                 return price;
 
