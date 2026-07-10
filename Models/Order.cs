@@ -2,8 +2,8 @@ namespace LegacyOrderService.Models
 {
     public class Order
     {
-        public string CustomerName;
-        public string ProductName;
+        public required string CustomerName;
+        public required string ProductName;
         public int Quantity;
         public double Price;
     }
