@@ -34,9 +34,9 @@ brainstorming list of todos...
 1. Use asynchronous database operations.
 1. Refactor into layers (domain, application, infrastructure, presentation)
 1. Projects
-2. Domain
-2. Use cases
-2. Adapters (not sure about this)
-2. SQLite Repository
-2. A test console app
-2. Unit tests
+  2. Domain
+  2. Use cases
+  2. Adapters (not sure about this)
+  2. SQLite Repository
+  2. A test console app
+  2. Unit tests
