@@ -23,7 +23,7 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
 
 # Branches
 * `development` this branch has the latest changes. It always compiles.
-* `dev/123_branch_name` All development work goes under `dev`. The branch name should start with a Github issue number followed by an underscore and then a short description of the branch in snake_case.
+* `dev/123_branch_name_in_snake_case` All development work goes under `dev`. The branch name should start with a Github issue number (e.g. 123) followed by an underscore and then a short description of the branch in snake_case.
 
 # Ideas for Refactoring and Improvements.
 
@@ -33,3 +33,10 @@ brainstorming list of todos...
 1. Reduce coupling.
 1. Use asynchronous database operations.
 1. Refactor into layers (domain, application, infrastructure, presentation)
+1. Projects
+2. Domain
+2. Use cases
+2. Adapters (not sure about this)
+2. SQLite Repository
+2. A test console app
+2. Unit tests
