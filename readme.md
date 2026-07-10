@@ -21,10 +21,6 @@ Resilience = the ability to spring back to an original form after having been sq
 Scalability = the ability of something, esp a computer system, to adapt to increased demands
 )
 
-# Branches
-* `development` this branch has the latest changes. It always compiles.
-* `dev/123_branch_name_in_snake_case` All development work goes under `dev`. The branch name should start with a Github issue number (e.g. 123) followed by an underscore and then a short description of the branch in snake_case.
-
 # Ideas for Refactoring and Improvements.
 
 brainstorming list of todos...
@@ -34,9 +30,25 @@ brainstorming list of todos...
 1. Use asynchronous database operations.
 1. Refactor into layers (domain, application, infrastructure, presentation)
 1. Projects
-  2. Domain
-  2. Use cases
-  2. Adapters (not sure about this)
-  2. SQLite Repository
-  2. A test console app
-  2. Unit tests
+    1. Domain
+    1. Use cases
+    1. Adapters (not sure about this)
+    1. SQLite Repository
+    1. A test console app
+    1. Unit tests
+
+# Branches
+* `development` this branch has the latest changes. It always compiles.
+* `dev/123_branch_name_in_snake_case` All development work goes under `dev`. The branch name should start with a Github issue number (e.g. 123) followed by an underscore and then a short description of the branch in snake_case.
+
+# Commit Messages
+* Example commit message
+```
+#123 fix: Fix to total price.
+
+This fixes the total price displayed after the user enters a product and quantity.
+```
+
+* Ensure commit messages are linked to an issue in Github by starting the commit message with #123 where 123 is the issue number.
+* After the issue have a short description.
+* After the short description include details if required.
