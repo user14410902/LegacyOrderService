@@ -53,8 +53,12 @@ This fixes the total price displayed after the user enters a product and quantit
 * After the issue have a short description.
 * After the short description include details if required.
 
-# Building
+# Building and Running
+
+For Linux: There is a `Makefile` which has shortcuts to common dotnet commands. See the `Makefile` for details.
+
+## Building
 `dotnet build`
 
-# Running
+## Running
 `dotnet run`
