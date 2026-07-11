@@ -32,6 +32,9 @@ public class OrderServiceDbContext : DbContext
       entity.HasIndex(product => product.Name)
       .IsUnique()
       .HasFilter("IsDeleted = false");
+
+      entity.HasQueryFilter(p => !p.IsDeleted);
+
     });
 
     modelBuilder.Entity<Order>(entity =>
