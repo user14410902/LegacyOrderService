@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OrderService.Data;
+using OrderService.Data.Interfaces;
 
-namespace LegacyOrderService.Data
+namespace OrderService.Data
 {
-    public class ProductRepository
+    public class ProductRepository : IProductRepository
     {
         private ServiceProvider _serviceProvider;
 
@@ -13,7 +14,7 @@ namespace LegacyOrderService.Data
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<OrderService.Entities.Product> GetProduct(string productName)
+        public async Task<OrderService.Entities.Product?> GetProductAsync(string productName)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
@@ -22,7 +23,7 @@ namespace LegacyOrderService.Data
             .Where(p => p.Name == productName)
             .AsNoTracking()
             .Select(p => new OrderService.Entities.Product(p.Id, p.Name, p.Price))
-            .FirstAsync();
+            .FirstOrDefaultAsync();
         }
 
 
