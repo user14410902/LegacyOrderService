@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OrderService.Data;
 using OrderService.Entities;
 
-namespace LegacyOrderService.Data
+namespace OrderService.Data
 {
     public class OrderRepository
     {
@@ -13,18 +13,21 @@ namespace LegacyOrderService.Data
             _serviceProvider = serviceProvider;
         }
 
-        public async Task Save(Order order)
+        public async Task<Guid> Save(Order order)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
-            db.Orders.Add(new OrderService.Data.Models.Order
+            var modelOrder = new OrderService.Data.Models.Order
             {
                 CustomerName = order.CustomerName,
                 ProductId = order.Product.Id,
                 Quantity = order.Quantity,
-            });
+            };
+            db.Orders.Add(modelOrder);
 
             await db.SaveChangesAsync();
+
+            return modelOrder.Id;
         }
     }
 }

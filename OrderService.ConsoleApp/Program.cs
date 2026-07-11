@@ -1,9 +1,10 @@
-using LegacyOrderService.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderService.Data;
+using OrderService.Data.Repositories;
 using OrderService.UseCases;
 
 namespace LegacyOrderService
@@ -24,6 +25,7 @@ namespace LegacyOrderService
             var serviceProvider = new ServiceCollection()
     .AddDbContext<OrderServiceDbContext>(options =>
         options.UseSqlite(connectionString))
+        .AddMemoryCache()
     .BuildServiceProvider();
 
             await SeedDatabaseIfRequired(serviceProvider, logger);
@@ -36,9 +38,15 @@ namespace LegacyOrderService
 
             logger.LogInformation("Enter product name:");
             string productName = Console.ReadLine() ?? string.Empty; //TODO Improve on validation.
-            var productRepo = new ProductRepository(serviceProvider);
-            var product = await productRepo.GetProduct(productName);
-
+            using var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            var productRepository = new ProductRepository(serviceProvider); //TODO refactor 
+            var cacheProductRepository = new CacheProductRepository(productRepository, memoryCache);
+            var product = await productRepository.GetProductAsync(productName); //TODO what if product is null?
+            if (product == null)
+            {
+                logger.LogError("Failed to retrieve {ProductName} from database. Stopping.", productName);
+                return;
+            }
 
             int qty = 0;
             bool quantityValid = false;
