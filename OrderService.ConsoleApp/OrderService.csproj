@@ -25,6 +25,7 @@
     <ProjectReference Include="..\OrderService.Entities\OrderService.Entities.csproj" />
     <ProjectReference Include="..\OrderService.UseCases\OrderService.UseCases.csproj" />
     <ProjectReference Include="..\OrderService.Data\OrderService.Data.csproj" />
+    <ProjectReference Include="..\OrderService.Services\OrderService.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>
