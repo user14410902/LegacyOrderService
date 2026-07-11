@@ -37,7 +37,7 @@ public class ConsoleAddOrderSources : IAddOrderSources
     return quantity;
   }
 
-  public string GetString(string askMessage, string errorMessage)
+  private string GetString(string askMessage, string errorMessage)
   {
     string value = string.Empty;
     bool isValid = false;

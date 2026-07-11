@@ -3,6 +3,8 @@ Legacy order service that needs a good refactor.
 
 # Requirements
 
+(These are the original requirements.)
+
 This small C# (.NET 8) console application was built to meet immediate needs, but the business anticipates substantial growth. The codebase will need to 
 
 1. scale to support new features, 
@@ -21,29 +23,18 @@ Resilience = the ability to spring back to an original form after having been sq
 Scalability = the ability of something, esp a computer system, to adapt to increased demands
 )
 
-# Ideas for Refactoring and Improvements.
+# Ideas, Comments, etc.
 
-brainstorming list of todos...
-
-1. Add unit tests.
-1. Reduce coupling.
-1. Use asynchronous database operations.
-1. Refactor into layers (domain, application, infrastructure, presentation)
-1. Projects
-    1. Domain
-    1. Use cases
-    1. Adapters (not sure about this)
-    1. SQLite Repository
-    1. A test console app
-    1. Unit tests
-
+1. Order has a reference to Product: I assume no product will ever be physically deleted. Only soft deleting (which would need to be implemented, i.e. adding appropriate column(s)). That way the Order does not need to store the price which is on the Product. I prefer database redundancy.
+   
 # Project Structure
 
 1. **Root Folder**
     1. **OrderService.slnx** Solution file.
     1. **Makefile** Convenience Makefile with common `dotnet` commands.
     1. **readme.md** This file.
-1. **OrderService.ConsoleApp** C# console application. The original LegacyOrderService.
+1. **OrderService.ConsoleApp** C# console application. The original LegacyOrderService. See command line parameters below.
+1. **OrderService.Services** Class library with the at the moment only the AddOrderService which ... adds an order to the database.
 1. **OrderService.Common** Base library for all other projects.
 1. **OrderService.Entities** All business entities.
 1. **OrderService.UseCases** All use cases for the business entities.
@@ -78,11 +69,46 @@ This fixes the total price displayed after the user enters a product and quantit
 
 For Linux: There is a `Makefile` which has shortcuts to common dotnet commands. See the `Makefile` for details.
 
+The commands below are all run from the solution folder.
+
 ## Building
 `dotnet build`
 
 ## Running
-`dotnet run`
+
+To run the console application use one of the following commands.
+
+`dotnet run --project OrderService.ConsoleApp/OrderService.csproj`
+This will display the usage message and then exits.
+
+```
+Description:
+  Welcome to Order Processor!
+
+Usage:
+  OrderService [command] [options]
+
+Options:
+  -v, --verbose   Enable verbose console logging.
+  -?, -h, --help  Show help and usage information
+  --version       Show version information
+
+Commands:
+  addOrder <customerName> <productName> <quantity>  Add a new order
+  addOrderInteractive                               Add a new order using the console
+
+```
+
+`dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrder <CustomerName> <ProductName> <Quantity>`
+This will add the order for the customer and exit. If the product does not exist or the quantity is invalid and error will be displayed.
+
+`dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderInteractive`
+This will run the original OrderService and allow the user to enter the order details through the console.
+
+## Tests
+
+`dotnet test`
+Runs all unit test projects.
 
 # FAQ
 ## How to add a EF migration?

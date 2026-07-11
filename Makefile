@@ -13,4 +13,4 @@ test:
 watch:
 	dotnet watch --project OrderService.ConsoleApp/OrderService.csproj run
 run:
-	dotnet run --project OrderService.ConsoleApp/OrderService.csproj
+	dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderInteractive
