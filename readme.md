@@ -37,6 +37,22 @@ brainstorming list of todos...
     1. A test console app
     1. Unit tests
 
+# Project Structure
+
+1. **Root Folder**
+    1. **OrderService.slnx** Solution file.
+    1. **Makefile** Convenience Makefile with common `dotnet` commands.
+    1. **readme.md** This file.
+1. **OrderService.ConsoleApp** C# console application. The original LegacyOrderService.
+1. **OrderService.Common** Base library for all other projects.
+1. **OrderService.Entities** All business entities.
+1. **OrderService.UseCases** All use cases for the business entities.
+1. **OrderService.Data** Database related code.
+1. **Database** Folder with the order.db database.
+1. There are NUnit test projects
+    1. **OrderService.Data.Tests**
+    1. **OrderService.UseCases.Tests**
+
 # Database
 * The `Database` folder has the Sqlite database.
 * In `OrderService.ConsoleApp` the configuration file `appsettings.json` has a connection string `Default` which points to the database.
