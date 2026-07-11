@@ -6,7 +6,7 @@ int Quantity)
 {
 
   public Guid Id { get; set; }
-  public double Total { get; } = Quantity * Product.Price;
+  public decimal Total { get; } = Quantity * Product.Price;
 
 }
 

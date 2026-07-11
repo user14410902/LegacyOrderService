@@ -37,6 +37,11 @@ brainstorming list of todos...
     1. A test console app
     1. Unit tests
 
+# Database
+* The `Database` folder has the Sqlite database.
+* In `OrderService.ConsoleApp` the configuration file `appsettings.json` has a connection string `Default` which points to the database.
+* If the Sqlite database does not exist, one is created upon startup and the products table is seeded.
+
 # Branches
 * `development` this branch has the latest changes. It always compiles.
 * `dev/123_branch_name_in_snake_case` All development work goes under `dev`. The branch name should start with a Github issue number (e.g. 123) followed by an underscore and then a short description of the branch in snake_case.
