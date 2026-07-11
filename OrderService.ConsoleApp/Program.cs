@@ -56,18 +56,25 @@ namespace LegacyOrderService
             logger.LogInformation("Processing order...");
 
             var useCase = new CreateOrderForCustomer();
-            var order = useCase.Execute(customerName, product, qty);
+            var result = useCase.Execute(customerName, product, qty);
 
+            if (result.IsSuccess)
+            {
+                var order = result.Value;
+                logger.LogInformation("Order complete!");
+                logger.LogInformation("Customer: " + order.CustomerName);
+                logger.LogInformation("Product: " + order.Product.Name);
+                logger.LogInformation("Quantity: " + order.Quantity);
+                logger.LogInformation("Total: $" + order.Total);
 
-            logger.LogInformation("Order complete!");
-            logger.LogInformation("Customer: " + order.CustomerName);
-            logger.LogInformation("Product: " + order.Product.Name);
-            logger.LogInformation("Quantity: " + order.Quantity);
-            logger.LogInformation("Total: $" + order.Total);
-
-            logger.LogInformation("Saving order to database...");
-            var repo = new OrderRepository(serviceProvider);
-            await repo.Save(order);
+                logger.LogInformation("Saving order to database...");
+                var repo = new OrderRepository(serviceProvider);
+                await repo.Save(order);
+            }
+            else
+            {
+                logger.LogError("An error occured while creating the error. Error message: {ErrorMessage}", result.Error);
+            }
             logger.LogInformation("Done.");
         }
 
