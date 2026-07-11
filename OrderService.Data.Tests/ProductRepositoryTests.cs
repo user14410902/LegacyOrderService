@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OrderService.Data.Interfaces;
+using OrderService.Data.Repositories;
 
 namespace OrderService.Data.Tests;
 

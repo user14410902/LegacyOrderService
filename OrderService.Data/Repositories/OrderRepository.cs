@@ -1,32 +1,34 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OrderService.Data;
+using OrderService.Data.Interfaces;
 using OrderService.Entities;
 
-namespace OrderService.Data
+namespace OrderService.Data.Repositories;
+
+public class OrderRepository : IOrderRepository
 {
-    public class OrderRepository
+    private readonly OrderServiceDbContext _dbContext;
+
+    public OrderRepository(OrderServiceDbContext dbContext)
     {
-        private readonly OrderServiceDbContext _dbContext;
+        _dbContext = dbContext;
+    }
 
-        public OrderRepository(OrderServiceDbContext dbContext)
+    public async Task<Guid> SaveAsync(Order order, CancellationToken cancellationToken)
+    {
+        var modelOrder = new OrderService.Data.Models.Order
         {
-            _dbContext = dbContext;
-        }
+            CustomerName = order.CustomerName,
+            ProductId = order.Product.Id,
+            Quantity = order.Quantity,
+            Created = DateTime.UtcNow
+        };
+        _dbContext.Orders.Add(modelOrder);
 
-        public async Task<Guid> Save(Order order, CancellationToken cancellationToken)
-        {
-            var modelOrder = new OrderService.Data.Models.Order
-            {
-                CustomerName = order.CustomerName,
-                ProductId = order.Product.Id,
-                Quantity = order.Quantity,
-                Created = DateTime.UtcNow
-            };
-            _dbContext.Orders.Add(modelOrder);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
-
-            return modelOrder.Id;
-        }
+        return modelOrder.Id;
     }
 }
+

@@ -28,7 +28,6 @@ public class CreateOrderForCustomer
       return Result<Order>.Failure("Quantity is less than or equal to 0. The quantity must be greater than zero.");
     }
 
-
     var order = new Order(
             CustomerName: customerName,
             Product: product,
