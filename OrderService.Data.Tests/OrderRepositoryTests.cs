@@ -11,11 +11,7 @@ public class OrderRepositoryTests
 
   private ServiceProvider _serviceProvider;
 
-  private IProductRepository _productRepository;
   private CancellationToken _cancellationToken;
-
-  private OrderRepository _orderRepository;
-
 
 
   [SetUp]
@@ -28,16 +24,13 @@ public class OrderRepositoryTests
     _serviceProvider = new ServiceCollection()
 .AddDbContext<OrderServiceDbContext>(options =>
 options.UseSqlite(connectionString))
+.AddScoped<IProductRepository, ProductRepository>()
+.AddScoped<OrderRepository>()
 .BuildServiceProvider();
-
-
 
     using var scope = _serviceProvider.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
     await DbInitializer.Seed(context, _cancellationToken);
-
-    _productRepository = new ProductRepository(_serviceProvider);
-    _orderRepository = new OrderRepository(_serviceProvider);
 
   }
 
@@ -46,15 +39,16 @@ options.UseSqlite(connectionString))
   {
     _serviceProvider?.Dispose();
     _serviceProvider = null!;
-
-
   }
 
   [Test]
   public async Task NullOrder()
   {
+    using var scope = _serviceProvider.CreateScope();
+
+    var orderRepository = scope.ServiceProvider.GetRequiredService<OrderRepository>();
     Assert.ThrowsAsync<NullReferenceException>(async () =>
-    await _orderRepository.Save(null!, _cancellationToken),
+    await orderRepository.Save(null!, _cancellationToken),
      "Expecting exception when order is null");
 
   }
@@ -62,9 +56,13 @@ options.UseSqlite(connectionString))
   [TestCase("Doohickey", 8.75)]
   public async Task ExistantProductName(string expectedProductName, decimal expectedProductPrice)
   {
-    var product = await _productRepository.GetProductAsync("Gadget", _cancellationToken);
+    using var scope = _serviceProvider.CreateScope();
+
+    var productRepository = scope.ServiceProvider.GetRequiredService<IProductRepository>();
+    var product = await productRepository.GetProductAsync("Gadget", _cancellationToken);
     var order = new Entities.Order("Test Customer", product!, 1);
-    var actualDBId = await _orderRepository.Save(order, _cancellationToken);
+    var orderRepository = scope.ServiceProvider.GetRequiredService<OrderRepository>();
+    var actualDBId = await orderRepository.Save(order, _cancellationToken);
     Assert.That(actualDBId, Is.Not.EqualTo(Guid.Empty), "Actual Guid ID of the new row is not valid.");
   }
 

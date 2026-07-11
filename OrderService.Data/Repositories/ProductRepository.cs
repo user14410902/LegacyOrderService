@@ -7,19 +7,17 @@ namespace OrderService.Data
 {
     public class ProductRepository : IProductRepository
     {
-        private ServiceProvider _serviceProvider;
+        private readonly OrderServiceDbContext _dbContext;
 
-        public ProductRepository(ServiceProvider serviceProvider)
+
+        public ProductRepository(OrderServiceDbContext dbContext)
         {
-            _serviceProvider = serviceProvider;
+            _dbContext = dbContext;
         }
 
         public async Task<OrderService.Entities.Product?> GetProductAsync(string productName, CancellationToken cancellationToken)
         {
-            using var scope = _serviceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
-
-            return await db.Products
+            return await _dbContext.Products
             .Where(p => p.Name == productName && p.IsDeleted == false)
             .AsNoTracking()
             .Select(p => new OrderService.Entities.Product(p.Id, p.Name, p.Price))

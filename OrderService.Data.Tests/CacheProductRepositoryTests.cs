@@ -12,9 +12,6 @@ public class CacheProductRepositoryTests
 {
 
   private ServiceProvider _serviceProvider;
-  private MemoryCache _memoryCache;
-
-  private IProductRepository _cacheProductRepository;
 
   private CancellationToken _cancellationToken;
 
@@ -28,18 +25,14 @@ public class CacheProductRepositoryTests
     _serviceProvider = new ServiceCollection()
 .AddDbContext<OrderServiceDbContext>(options =>
 options.UseSqlite(connectionString))
+          .AddScoped<IProductRepository, ProductRepository>()
+    .AddScoped<CacheProductRepository>()
+    .AddMemoryCache()
 .BuildServiceProvider();
-
-    var cacheOptions = new MemoryCacheOptions();
-    _memoryCache = new MemoryCache(cacheOptions);
-
 
     using var scope = _serviceProvider.CreateScope();
     var context = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
     await DbInitializer.Seed(context, _cancellationToken);
-
-    var productRepository = new ProductRepository(_serviceProvider);
-    _cacheProductRepository = new CacheProductRepository(productRepository, _memoryCache);
   }
 
   [TearDown]
@@ -47,14 +40,15 @@ options.UseSqlite(connectionString))
   {
     _serviceProvider?.Dispose();
     _serviceProvider = null!;
-
-    _memoryCache?.Dispose();
   }
 
   [Test]
   public async Task NonExistantProductName()
   {
-    var product = await _cacheProductRepository.GetProductAsync("this should not be in the database", _cancellationToken);
+    using var scope = _serviceProvider.CreateScope();
+    var cacheProductRepository = scope.ServiceProvider.GetRequiredService<CacheProductRepository>();
+
+    var product = await cacheProductRepository.GetProductAsync("this should not be in the database", _cancellationToken);
 
     Assert.That(product, Is.Null, "Expected product to be null.");
   }
@@ -62,7 +56,10 @@ options.UseSqlite(connectionString))
   [TestCase("Doohickey", 8.75)]
   public async Task ExistantProductName(string expectedProductName, decimal expectedProductPrice)
   {
-    var product = await _cacheProductRepository.GetProductAsync(expectedProductName, _cancellationToken);
+    using var scope = _serviceProvider.CreateScope();
+    var cacheProductRepository = scope.ServiceProvider.GetRequiredService<CacheProductRepository>();
+
+    var product = await cacheProductRepository.GetProductAsync(expectedProductName, _cancellationToken);
 
     Assert.That(product, Is.Not.Null, "Expected product to be not null.");
     Assert.That(product.Name, Is.EqualTo(expectedProductName), $"Expected product name ({expectedProductName}) is incorrect.");
@@ -72,15 +69,18 @@ options.UseSqlite(connectionString))
   [Test]
   public async Task EnsureUnderlyingRepositoryIsOnlyCalledOnce()
   {
+    using var scope = _serviceProvider.CreateScope();
+    var memoryCache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
+
     var mockProductRepository = Substitute.For<IProductRepository>();
 
     var productName = "Gadget";
     mockProductRepository.GetProductAsync(productName, _cancellationToken).Returns(new OrderService.Entities.Product(Id: Guid.NewGuid(), Name: productName, Price: 1.0M));
 
-    _cacheProductRepository = new CacheProductRepository(mockProductRepository, _memoryCache);
+    var cacheProductRepository = new CacheProductRepository(mockProductRepository, memoryCache);
 
-    await _cacheProductRepository.GetProductAsync(productName, _cancellationToken);
-    await _cacheProductRepository.GetProductAsync(productName, _cancellationToken);
+    await cacheProductRepository.GetProductAsync(productName, _cancellationToken);
+    await cacheProductRepository.GetProductAsync(productName, _cancellationToken);
 
     await mockProductRepository.Received(1).GetProductAsync(productName, _cancellationToken); //underlying repository should only be called once
   }

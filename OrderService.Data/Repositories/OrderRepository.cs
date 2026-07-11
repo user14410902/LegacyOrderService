@@ -6,17 +6,15 @@ namespace OrderService.Data
 {
     public class OrderRepository
     {
-        private ServiceProvider _serviceProvider;
+        private readonly OrderServiceDbContext _dbContext;
 
-        public OrderRepository(ServiceProvider serviceProvider)
+        public OrderRepository(OrderServiceDbContext dbContext)
         {
-            _serviceProvider = serviceProvider;
+            _dbContext = dbContext;
         }
 
         public async Task<Guid> Save(Order order, CancellationToken cancellationToken)
         {
-            using var scope = _serviceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
             var modelOrder = new OrderService.Data.Models.Order
             {
                 CustomerName = order.CustomerName,
@@ -24,9 +22,9 @@ namespace OrderService.Data
                 Quantity = order.Quantity,
                 Created = DateTime.UtcNow
             };
-            db.Orders.Add(modelOrder);
+            _dbContext.Orders.Add(modelOrder);
 
-            await db.SaveChangesAsync(cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
 
             return modelOrder.Id;
         }
