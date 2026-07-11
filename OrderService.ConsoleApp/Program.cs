@@ -7,7 +7,7 @@ using OrderService.Data;
 using OrderService.Data.Repositories;
 using OrderService.UseCases;
 
-namespace LegacyOrderService
+namespace OrderService
 {
     class Program
     {
