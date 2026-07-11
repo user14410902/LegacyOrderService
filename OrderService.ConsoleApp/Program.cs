@@ -13,6 +13,9 @@ namespace OrderService
     {
         static async Task Main(string[] args)
         {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            CancellationToken cancellationToken = cts.Token;
+
             var configuration = GetConfiguration();
 
             var logger = InitialiseAndReturnLogger(configuration);
@@ -28,9 +31,7 @@ namespace OrderService
         .AddMemoryCache()
     .BuildServiceProvider();
 
-            await SeedDatabaseIfRequired(serviceProvider, logger);
-
-
+            await SeedDatabaseIfRequired(serviceProvider, logger, cancellationToken);
 
             logger.LogInformation("Welcome to Order Processor!");
             logger.LogInformation("Enter customer name:");
@@ -41,7 +42,7 @@ namespace OrderService
             using var memoryCache = new MemoryCache(new MemoryCacheOptions());
             var productRepository = new ProductRepository(serviceProvider); //TODO refactor 
             var cacheProductRepository = new CacheProductRepository(productRepository, memoryCache);
-            var product = await productRepository.GetProductAsync(productName); //TODO what if product is null?
+            var product = await productRepository.GetProductAsync(productName, cancellationToken); //TODO what if product is null?
             if (product == null)
             {
                 logger.LogError("Failed to retrieve {ProductName} from database. Stopping.", productName);
@@ -77,7 +78,7 @@ namespace OrderService
 
                 logger.LogInformation("Saving order to database...");
                 var repo = new OrderRepository(serviceProvider);
-                await repo.Save(order);
+                await repo.Save(order, cancellationToken);
             }
             else
             {
@@ -108,13 +109,13 @@ namespace OrderService
             return loggerFactory.CreateLogger<Program>();
         }
 
-        private static async Task SeedDatabaseIfRequired(ServiceProvider serviceProvider, ILogger logger)
+        private static async Task SeedDatabaseIfRequired(ServiceProvider serviceProvider, ILogger logger, CancellationToken cancellationToken)
         {
             using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
 
             logger.LogInformation("Connection string: {ConnectionString}", context.Database.GetConnectionString());
-            await DbInitializer.Seed(context);
+            await DbInitializer.Seed(context, cancellationToken);
         }
     }
 }
