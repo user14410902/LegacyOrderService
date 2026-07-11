@@ -1,4 +1,5 @@
 using LegacyOrderService.Data;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OrderService.UseCases;
 
@@ -8,7 +9,8 @@ namespace LegacyOrderService
     {
         static void Main(string[] args)
         {
-            var logger = InitialiseAndGetLogger();
+            var configuration = GetConfiguration();
+            var logger = InitialiseAndReturnLogger(configuration);
 
             logger.LogInformation("Welcome to Order Processor!");
             logger.LogInformation("Enter customer name:");
@@ -51,12 +53,24 @@ namespace LegacyOrderService
             logger.LogInformation("Done.");
         }
 
-        private static ILogger InitialiseAndGetLogger()
+        private static IConfigurationRoot GetConfiguration()
+        {
+            return new ConfigurationBuilder()
+                            .SetBasePath(AppContext.BaseDirectory)
+                            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                            .Build();
+        }
+
+        private static ILogger InitialiseAndReturnLogger(IConfigurationRoot configuration)
         {
             using var loggerFactory = LoggerFactory.Create(builder =>
-        {
-            builder.AddConsole();
-        });
+{
+    // Bind the "Logging" section of appsettings.json to the logger configuration
+    builder.AddConfiguration(configuration.GetSection("Logging"));
+
+    // Add console logger
+    builder.AddConsole();
+});
 
             return loggerFactory.CreateLogger<Program>();
         }
