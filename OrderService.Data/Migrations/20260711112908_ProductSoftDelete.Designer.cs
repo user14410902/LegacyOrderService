@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OrderService.Data;
 
@@ -10,9 +11,11 @@ using OrderService.Data;
 namespace OrderService.Data.Migrations
 {
     [DbContext(typeof(OrderServiceDbContext))]
-    partial class OrderServiceDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711112908_ProductSoftDelete")]
+    partial class ProductSoftDelete
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -21,9 +24,6 @@ namespace OrderService.Data.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("Created")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CustomerName")

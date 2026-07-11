@@ -22,6 +22,7 @@ namespace OrderService.Data
                 CustomerName = order.CustomerName,
                 ProductId = order.Product.Id,
                 Quantity = order.Quantity,
+                Created = DateTime.UtcNow
             };
             db.Orders.Add(modelOrder);
 

@@ -83,3 +83,22 @@ For Linux: There is a `Makefile` which has shortcuts to common dotnet commands. 
 
 ## Running
 `dotnet run`
+
+# FAQ
+## How to add a EF migration?
+
+Run this command from the solution folder.
+
+`dotnet ef migrations add ProductSoftDelete --project OrderService.Data/OrderService.Data.csproj --startup-project OrderService.ConsoleApp/OrderService.csproj`
+
+The console app needs to have a reference to `Microsoft.EntityFrameworkCore.Design`.
+
+And the data project needs to implement `IDesignTimeDbContextFactory` (see implementation in `OrderServiceDbContextFactory`) so that the migration tool knows how to build the dependency injection container.
+
+## How to update the database after adding a EF migration?
+
+Run this command from the solution folder.
+
+`dotnet ef database update --project OrderService.Data/OrderService.Data.csproj --startup-project OrderService.ConsoleApp/OrderService.csproj`
+
+Remember this will use the default connection string defined in the console app's `appsettings.json` file. At it assumes the database was initially created using the migrations.

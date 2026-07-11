@@ -2,6 +2,8 @@ build:
 	dotnet build
 clean:
 	dotnet clean
+	rm -rf OrderService.Data.Tests/bin/
+	rm -rf OrderService.Data.Tests/obj/
 restore:
 	dotnet restore
 test:
