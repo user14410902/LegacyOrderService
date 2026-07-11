@@ -33,8 +33,6 @@ public class OrderServiceDbContext : DbContext
       .IsUnique()
       .HasFilter("IsDeleted = false");
 
-      entity.HasQueryFilter(p => !p.IsDeleted);
-
     });
 
     modelBuilder.Entity<Order>(entity =>
