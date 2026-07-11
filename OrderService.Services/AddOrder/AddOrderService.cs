@@ -46,20 +46,22 @@ public class AddOrderService
       return Result<Guid>.Failure(message.ToString());
     }
 
-    int qty = _sources.GetQuantity();
+    int quantity = _sources.GetQuantity();
 
     _logger.LogInformation("Processing order...");
 
     var useCase = new CreateOrderForCustomer();
-    var result = useCase.Execute(customerName, product, qty);
+    var result = useCase.Execute(customerName, product, quantity);
 
     if (result.IsSuccess)
     {
       var order = result.Value;
 
+      //first attempt to save the order to the database
       _logger.LogInformation("Saving order to database...");
       var newOrderId = await _orderRepository.SaveAsync(order, cancellationToken);
 
+      //if the database save suceeds display the order
       _logger.LogInformation("Order complete!");
       _display.DisplayOrder(order);
 
