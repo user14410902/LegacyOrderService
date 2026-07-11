@@ -20,7 +20,7 @@ namespace OrderService.Data
             var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
 
             return await db.Products
-            .Where(p => p.Name == productName)
+            .Where(p => p.Name == productName && p.IsDeleted == false)
             .AsNoTracking()
             .Select(p => new OrderService.Entities.Product(p.Id, p.Name, p.Price))
             .FirstOrDefaultAsync(cancellationToken);

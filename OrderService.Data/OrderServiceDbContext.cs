@@ -17,13 +17,20 @@ public class OrderServiceDbContext : DbContext
   protected override void OnModelCreating(ModelBuilder modelBuilder)
   {
 
-    modelBuilder.Entity<Product>(builder =>
+    modelBuilder.Entity<Product>(entity =>
     {
-      builder.Property(b => b.Name)
+      entity.Property(product => product.Name)
       .IsRequired()
       .HasMaxLength(200);
 
-      builder.Property(b => b.Price).IsRequired();
+      entity.Property(product => product.Price).IsRequired();
+
+      entity.Property(product => product.IsDeleted).HasDefaultValue(false);
+
+      //ensure each product's name is unique for not-deleted records
+      entity.HasIndex(product => product.Name)
+      .IsUnique()
+      .HasFilter("IsDeleted = false");
     });
 
     modelBuilder.Entity<Order>(entity =>
@@ -34,10 +41,12 @@ public class OrderServiceDbContext : DbContext
 
       entity.Property(order => order.Quantity).IsRequired();
 
+      entity.Property(order => order.Created).IsRequired();
+
       entity.HasOne(order => order.Product)
-            .WithMany()
-            .HasForeignKey(order => order.ProductId)
-            .IsRequired();
+                .WithMany()
+                .HasForeignKey(order => order.ProductId)
+                .IsRequired();
     });
   }
 
