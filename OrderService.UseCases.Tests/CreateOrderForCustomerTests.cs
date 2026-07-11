@@ -10,7 +10,7 @@ public class CreateOrderForCustomerTests
     [Test]
     public void ExecuteNullCustomerName()
     {
-        var product = new Product(Guid.NewGuid(), "Product Name", 1.0);
+        var product = new Product(Guid.NewGuid(), "Product Name", 1.0M);
         var useCase = new CreateOrderForCustomer();
         string? customerName = null;
         // suppress nullable warning: we are intentionally passing null to assert an ArgumentNullException is thrown
@@ -18,7 +18,7 @@ public class CreateOrderForCustomerTests
     }
 
     [TestCase("CustomerName", "Product1", 15.0, 2)]
-    public void ExecuteTest(string customerName, string productName, double productUnitPrice, int quantity)
+    public void ExecuteTest(string customerName, string productName, decimal productUnitPrice, int quantity)
     {
         var product = new Product(Guid.NewGuid(), productName, productUnitPrice);
         var useCase = new CreateOrderForCustomer();

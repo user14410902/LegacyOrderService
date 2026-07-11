@@ -2,6 +2,7 @@
   <Folder Name="/OrderService.ConsoleApp/">
     <Project Path="OrderService.ConsoleApp/OrderService.csproj" />
   </Folder>
+  <Project Path="OrderService.Data/OrderService.Data.csproj" />
   <Project Path="OrderService.Entities/OrderService.Entities.csproj" />
   <Project Path="OrderService.UseCases.Tests/OrderService.UseCases.Tests.csproj" />
   <Project Path="OrderService.UseCases/OrderService.UseCases.csproj" />

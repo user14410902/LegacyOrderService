@@ -17,14 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="orders.db">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\OrderService.Entities\OrderService.Entities.csproj" />
     <ProjectReference Include="..\OrderService.UseCases\OrderService.UseCases.csproj" />
+    <ProjectReference Include="..\OrderService.Data\OrderService.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

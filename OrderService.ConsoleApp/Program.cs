@@ -1,16 +1,34 @@
 using LegacyOrderService.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OrderService.Data;
 using OrderService.UseCases;
 
 namespace LegacyOrderService
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             var configuration = GetConfiguration();
+
             var logger = InitialiseAndReturnLogger(configuration);
+
+            string connectionString = configuration.GetConnectionString("Default")
+                ?? throw new InvalidOperationException("Connection string 'Default' not found.");
+
+            logger.LogInformation("Connection string: {ConnectionString}", connectionString);
+
+            var serviceProvider = new ServiceCollection()
+    .AddDbContext<OrderServiceDbContext>(options =>
+        options.UseSqlite(connectionString))
+    .BuildServiceProvider();
+
+            await SeedDatabaseIfRequired(serviceProvider, logger);
+
+
 
             logger.LogInformation("Welcome to Order Processor!");
             logger.LogInformation("Enter customer name:");
@@ -18,8 +36,8 @@ namespace LegacyOrderService
 
             logger.LogInformation("Enter product name:");
             string productName = Console.ReadLine() ?? string.Empty; //TODO Improve on validation.
-            var productRepo = new ProductRepository();
-            var product = productRepo.GetProduct(productName);
+            var productRepo = new ProductRepository(serviceProvider);
+            var product = await productRepo.GetProduct(productName);
 
 
             int qty = 0;
@@ -48,8 +66,8 @@ namespace LegacyOrderService
             logger.LogInformation("Total: $" + order.Total);
 
             logger.LogInformation("Saving order to database...");
-            var repo = new OrderRepository();
-            repo.Save(order);
+            var repo = new OrderRepository(serviceProvider);
+            await repo.Save(order);
             logger.LogInformation("Done.");
         }
 
@@ -64,15 +82,24 @@ namespace LegacyOrderService
         private static ILogger InitialiseAndReturnLogger(IConfigurationRoot configuration)
         {
             using var loggerFactory = LoggerFactory.Create(builder =>
-{
-    // Bind the "Logging" section of appsettings.json to the logger configuration
-    builder.AddConfiguration(configuration.GetSection("Logging"));
+            {
+                // Bind the "Logging" section of appsettings.json to the logger configuration
+                builder.AddConfiguration(configuration.GetSection("Logging"));
 
-    // Add console logger
-    builder.AddConsole();
-});
+                // Add console logger
+                builder.AddConsole();
+            });
 
             return loggerFactory.CreateLogger<Program>();
+        }
+
+        private static async Task SeedDatabaseIfRequired(ServiceProvider serviceProvider, ILogger logger)
+        {
+            using var scope = serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
+
+            logger.LogInformation("Connection string: {ConnectionString}", context.Database.GetConnectionString());
+            await DbInitializer.Seed(context);
         }
     }
 }
