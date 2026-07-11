@@ -13,7 +13,7 @@ namespace OrderService.Data
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<Guid> Save(Order order)
+        public async Task<Guid> Save(Order order, CancellationToken cancellationToken)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
@@ -25,7 +25,7 @@ namespace OrderService.Data
             };
             db.Orders.Add(modelOrder);
 
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
 
             return modelOrder.Id;
         }

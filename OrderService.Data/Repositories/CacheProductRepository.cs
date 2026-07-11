@@ -15,13 +15,13 @@ public class CacheProductRepository : IProductRepository
     _cache = cache;
   }
 
-  public async Task<Product?> GetProductAsync(string productName)
+  public async Task<Product?> GetProductAsync(string productName, CancellationToken cancellationToken)
   {
     string cacheKey = $"product_{productName}";
 
     if (!_cache.TryGetValue(cacheKey, out Product? product))
     {
-      product = await _underlyingProductRepository.GetProductAsync(productName);
+      product = await _underlyingProductRepository.GetProductAsync(productName, cancellationToken);
 
       if (product != null)
       {

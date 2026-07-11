@@ -14,7 +14,7 @@ namespace OrderService.Data
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<OrderService.Entities.Product?> GetProductAsync(string productName)
+        public async Task<OrderService.Entities.Product?> GetProductAsync(string productName, CancellationToken cancellationToken)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
@@ -23,7 +23,7 @@ namespace OrderService.Data
             .Where(p => p.Name == productName)
             .AsNoTracking()
             .Select(p => new OrderService.Entities.Product(p.Id, p.Name, p.Price))
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
         }
 
 

@@ -3,7 +3,7 @@ namespace OrderService.Data;
 
 public static class DbInitializer
 {
-  public static async Task Seed(OrderServiceDbContext context)
+  public static async Task Seed(OrderServiceDbContext context, CancellationToken cancellationToken)
   {
     context.Database.EnsureCreated();
     if (!context.Products.Any())
@@ -15,7 +15,7 @@ public static class DbInitializer
                 new Product { Name = "Doohickey", Price = 8.75M },
             };
       context.Products.AddRange(defaultProducts);
-      await context.SaveChangesAsync();
+      await context.SaveChangesAsync(cancellationToken);
     }
   }
 }
