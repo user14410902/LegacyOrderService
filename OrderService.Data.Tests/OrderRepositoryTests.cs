@@ -48,7 +48,7 @@ options.UseSqlite(connectionString))
 
     var orderRepository = scope.ServiceProvider.GetRequiredService<OrderRepository>();
     Assert.ThrowsAsync<NullReferenceException>(async () =>
-    await orderRepository.SaveAsync(null!, _cancellationToken),
+    await orderRepository.AddAndSaveSingleAsync(null!, _cancellationToken),
      "Expecting exception when order is null");
 
   }
@@ -62,7 +62,7 @@ options.UseSqlite(connectionString))
     var product = await productRepository.GetProductAsync("Gadget", _cancellationToken);
     var order = new Entities.Order("Test Customer", product!, 1);
     var orderRepository = scope.ServiceProvider.GetRequiredService<OrderRepository>();
-    var actualDBId = await orderRepository.SaveAsync(order, _cancellationToken);
+    var actualDBId = await orderRepository.AddAndSaveSingleAsync(order, _cancellationToken);
     Assert.That(actualDBId, Is.Not.EqualTo(Guid.Empty), "Actual Guid ID of the new row is not valid.");
   }
 

@@ -5,7 +5,11 @@ namespace OrderService.Data.Interfaces;
 public interface IOrderRepository
 {
 
-  public Task<Guid> SaveAsync(Order order, CancellationToken cancellationToken);
+  public void Add(Order entity);
+
+  public Task SaveAsync(CancellationToken cancellationToken);
+
+  public Task<Guid> AddAndSaveSingleAsync(Order order, CancellationToken cancellationToken);
 
 }
 

@@ -15,20 +15,36 @@ public class OrderRepository : IOrderRepository
         _dbContext = dbContext;
     }
 
-    public async Task<Guid> SaveAsync(Order order, CancellationToken cancellationToken)
+    public void Add(Order entity)
     {
-        var modelOrder = new OrderService.Data.Models.Order
-        {
-            CustomerName = order.CustomerName,
-            ProductId = order.Product.Id,
-            Quantity = order.Quantity,
-            Created = DateTime.UtcNow
-        };
-        _dbContext.Orders.Add(modelOrder);
+        _dbContext.Orders.Add(ModelFromEntity(entity));
+    }
+
+    public async Task SaveAsync(CancellationToken cancellationToken)
+    {
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<Guid> AddAndSaveSingleAsync(Order entity, CancellationToken cancellationToken)
+    {
+        var model = ModelFromEntity(entity);
+        _dbContext.Orders.Add(model);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return modelOrder.Id;
+        return model.Id;
+    }
+
+    //TODO Use Automapper?
+    private Models.Order ModelFromEntity(Entities.Order entity)
+    {
+        return new OrderService.Data.Models.Order
+        {
+            CustomerName = entity.CustomerName,
+            ProductId = entity.Product.Id,
+            Quantity = entity.Quantity,
+            Created = DateTime.UtcNow
+        };
     }
 }
 
