@@ -20,6 +20,7 @@ using OrderService.Services.GetOrders;
 using ResultSingleOrder = OrderService.Common.Result<System.Guid, string>;
 using ResultCSV = OrderService.Common.Result<bool, System.Collections.Generic.List<string>>;
 using ResultGetOrders = OrderService.Common.Result<System.Collections.Generic.List<OrderService.Entities.Order>, string>;
+using OrderService.Services.Interfaces;
 
 namespace OrderService
 {
@@ -58,10 +59,10 @@ namespace OrderService
         {
             var builder = BuildHostBase(arg, verbose);
 
-            builder.Services.AddScoped<IAddOrderSources, ConsoleAddOrderSources>()
+            builder.Services.AddScoped<IAddOrderSource, ConsoleAddOrderSource>()
             .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>()
             .AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>()
-            .AddScoped<IService<System.Guid, string>, AddOrderService>();
+            .AddScoped<IOrderCreationService, AddOrderService>();
 
             return builder.Build();
         }
@@ -71,11 +72,11 @@ namespace OrderService
         {
             var builder = BuildHostBase(arg, verbose);
 
-            builder.Services.AddScoped<IAddOrderSources, CommanLineAddOrderSources>(
-                    x => new CommanLineAddOrderSources(customerName, productName, quantity))
+            builder.Services.AddScoped<IAddOrderSource, ExternalAddOrderSource>(
+                    x => new ExternalAddOrderSource(customerName, productName, quantity))
             .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>()
             .AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>()
-            .AddScoped<AddOrderService>();
+            .AddScoped<IOrderCreationService, AddOrderService>();
 
             return builder.Build();
         }
@@ -83,27 +84,31 @@ namespace OrderService
         private static IHost BuilderHostCSV(string[] arg, bool verbose, FileInfo file)
         {
             var builder = BuildHostBase(arg, verbose);
-
-            builder.Services.AddScoped<IService<bool, List<string>>, AddOrderCSVService>();
-            builder.Services.AddScoped<ICSVRowSource,
-             CSVHelperRowSource>(x => new CSVHelperRowSource(file.FullName));
-
+            builder.Services.AddScoped<IOrderCSVCreationService, AddOrderCSVService>();
+            builder.Services.AddScoped<ICSVRowSource, CSVHelperRowSource>(x => new CSVHelperRowSource(file.FullName));
             return builder.Build();
 
         }
 
-        private static async Task ExecuteAsync<ResultType, ErrorType>(IHost host, Action<ILogger, Result<ResultType, ErrorType>> finalAction, CancellationToken cancellationToken)
+        private static async Task ExecuteAsync<ResultType, ErrorType>(
+            IHost host,
+            Func<IServiceProvider, ILogger, CancellationToken, Task> executeActionAsync,
+            CancellationToken cancellationToken)
         {
             using (IServiceScope scope = host.Services.CreateScope())
             {
                 var logger = host.Services.GetRequiredService<ILogger<Program>>();
-
                 await SeedDatabaseIfRequired(scope, logger, cancellationToken);
-
-                var service = scope.ServiceProvider.GetRequiredService<IService<ResultType, ErrorType>>();
-                var result = await service.ExecuteAsync(cancellationToken);
-                finalAction(logger, result);
+                await executeActionAsync(scope.ServiceProvider, logger, cancellationToken);
             }
+        }
+
+        private static async Task ExecuteOrderCreationAsync(IServiceProvider serviceProvider, ILogger logger, CancellationToken cancellationToken)
+        {
+            var service = serviceProvider.GetRequiredService<IOrderCreationService>();
+            var source = serviceProvider.GetRequiredService<IAddOrderSource>();
+            var result = await service.ExecuteAsync(source, cancellationToken);
+            LogResult(logger, result);
         }
 
         private static RootCommand BuildRootCommand(string[] args)
@@ -200,14 +205,15 @@ namespace OrderService
                     var verbose = parseResult.GetValue(verboseOption);
                     var host = BuildHostPassInValues(args, verbose,
                 customerName, productName, quantity);
-                    await ExecuteAsync<Guid, String>(host, LogResult, cancellationToken);
+
+                    await ExecuteAsync<Guid, String>(host, ExecuteOrderCreationAsync, cancellationToken);
                 });
 
             addOrderInteractiveCommand.SetAction(async parseResult =>
             {
                 var verbose = parseResult.GetValue(verboseOption);
                 var host = BuildHostInteractive(args, verbose);
-                await ExecuteAsync<Guid, String>(host, LogResult, cancellationToken);
+                await ExecuteAsync<Guid, String>(host, ExecuteOrderCreationAsync, cancellationToken);
             });
 
             addOrderCSVFileCommand.SetAction(async parseResult =>
@@ -215,7 +221,14 @@ namespace OrderService
                 var verbose = parseResult.GetValue(verboseOption);
                 var file = parseResult.GetValue(filenameArgument)!;
                 var host = BuilderHostCSV(args, verbose, file);
-                await ExecuteAsync<bool, List<string>>(host, LogResult, cancellationToken);
+                await ExecuteAsync<bool, List<string>>(host,
+                     async (serviceProvider, logger, cancellationToken) =>
+                        {
+                            var service = serviceProvider.GetRequiredService<IOrderCSVCreationService>();
+                            var source = serviceProvider.GetRequiredService<ICSVRowSource>();
+                            var result = await service.ExecuteAsync(source, cancellationToken);
+                            LogResult(logger, result);
+                        }, cancellationToken);
             });
 
             showAllOrdersCommand.SetAction(async parseResult =>
@@ -226,11 +239,17 @@ namespace OrderService
                 builder.Logging.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Warning);
                 builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(GetConnectionString(builder)));
                 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-                builder.Services.AddScoped<IService<List<Entities.Order>, string>, GetOrdersService>();
+                builder.Services.AddScoped<IOrderRetrievalService, GetOrdersService>();
 
                 var host = builder.Build();
 
-                await ExecuteAsync<List<Entities.Order>, string>(host, LogResult, cancellationToken);
+                await ExecuteAsync<List<Entities.Order>, string>(host,
+                     async (serviceProvider, logger, cancellationToken) =>
+                        {
+                            var service = serviceProvider.GetRequiredService<IOrderRetrievalService>();
+                            var result = await service.ExecuteAsync(cancellationToken);
+                            LogResult(logger, result);
+                        }, cancellationToken);
 
             });
 

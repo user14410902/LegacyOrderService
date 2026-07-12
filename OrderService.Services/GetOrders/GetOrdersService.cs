@@ -1,11 +1,12 @@
 using Microsoft.Extensions.Logging;
 using OrderService.Data.Interfaces;
 using OrderService.Entities;
+using OrderService.Services.Interfaces;
 using ResultType = OrderService.Common.Result<System.Collections.Generic.List<OrderService.Entities.Order>, string>;
 
 namespace OrderService.Services.GetOrders;
 
-public class GetOrdersService(IOrderRepository orderRepository) : IService<List<Order>, string>
+public class GetOrdersService(IOrderRepository orderRepository) : IOrderRetrievalService
 {
   private readonly IOrderRepository _orderRepository = orderRepository;
 

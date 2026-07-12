@@ -3,6 +3,7 @@ using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
 using OrderService.Common;
 using OrderService.Data.Interfaces;
+using OrderService.Services.Interfaces;
 using OrderService.UseCases;
 using OrderService.UseCases.Implementations;
 
@@ -10,33 +11,30 @@ using ResultType = OrderService.Common.Result<bool, System.Collections.Generic.L
 
 namespace OrderService.Services.AddOrderCSV;
 
-public class AddOrderCSVService : IService<bool, List<string>>
+public class AddOrderCSVService : IOrderCSVCreationService
 {
   private readonly ILogger<AddOrderCSVService> _logger;
   private readonly IProductRepository _productRepository;
   private readonly IOrderRepository _orderRepository;
-  private readonly ICSVRowSource _source;
   private readonly ICreateOrderForCustomer _useCase;
 
   public AddOrderCSVService(ILogger<AddOrderCSVService> logger,
   IProductRepository productRepository,
   IOrderRepository orderRepository,
-  ICSVRowSource source,
   ICreateOrderForCustomer useCase)
   {
     _logger = logger;
     _productRepository = productRepository;
     _orderRepository = orderRepository;
-    _source = source;
     _useCase = useCase;
   }
 
-  public async Task<ResultType> ExecuteAsync(CancellationToken cancellationToken)
+  public async Task<ResultType> ExecuteAsync(ICSVRowSource source, CancellationToken cancellationToken)
   {
 
     try
     {
-      var records = _source.Rows;
+      var records = source.Rows;
       if (records.Count() == 0)
       {
         return ResultType.Failure(new List<string> { "No records to process." });
@@ -109,7 +107,7 @@ public class AddOrderCSVService : IService<bool, List<string>>
     catch (System.IO.FileNotFoundException e)
     {
       return ResultType.Failure(new List<String> {
-        $"File not found {_source.SourceDescription}. Error message: {e.Message}" });
+        $"File not found {source.SourceDescription}. Error message: {e.Message}" });
     }
   }
 }

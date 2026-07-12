@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using OrderService.API.Responses.Orders.GetAllOrders;
 using OrderService.Services;
 using OrderService.Services.GetOrders;
+using OrderService.Services.Interfaces;
 namespace OrderService.API.Endpoints.Orders.GetAllOrders;
 
 public class GetAllOrdersEndpoint : EndpointWithoutRequest<Results<Ok<List<OrderResponse>>, ProblemDetails>>
 {
 
-  public required IService<List<OrderService.Entities.Order>, string> GetAllOrdersService { get; set; }
+  public required IOrderRetrievalService GetAllOrdersService { get; set; }
   public override void Configure()
   {
     Get("/api/order/getall");

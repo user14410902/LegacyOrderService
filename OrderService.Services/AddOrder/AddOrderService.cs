@@ -2,6 +2,7 @@
 using OrderService.Common;
 using OrderService.Data;
 using OrderService.Data.Interfaces;
+using OrderService.Services.Interfaces;
 using OrderService.UseCases;
 using OrderService.UseCases.Implementations;
 
@@ -9,32 +10,29 @@ using ResultType = OrderService.Common.Result<System.Guid, string>;
 
 namespace OrderService.Services.AddOrder;
 
-public class AddOrderService : IService<System.Guid, string>
+public class AddOrderService : IOrderCreationService
 {
   private readonly ILogger<AddOrderService> _logger;
   private readonly IProductRepository _productRepository;
   private readonly IOrderRepository _orderRepository;
-  private readonly IAddOrderSources _sources;
   private readonly IAddOrderDisplay _display;
   private readonly ICreateOrderForCustomer _useCase;
 
   public AddOrderService(ILogger<AddOrderService> logger,
   IProductRepository productRepository,
   IOrderRepository orderRepository,
-  IAddOrderSources sources,
   IAddOrderDisplay display,
   ICreateOrderForCustomer useCase)
   {
     _logger = logger;
     _productRepository = productRepository;
     _orderRepository = orderRepository;
-    _sources = sources;
     _display = display;
     _useCase = useCase;
   }
-  public async Task<ResultType> ExecuteAsync(CancellationToken cancellationToken)
+  public async Task<ResultType> ExecuteAsync(IAddOrderSource source, CancellationToken cancellationToken)
   {
-    string? customerName = _sources.GetCustomerName();
+    string? customerName = source.GetCustomerName();
     if (string.IsNullOrWhiteSpace(customerName))
     {
       var message = "Customer name is null. A valid customer name is required. Stopping.";
@@ -42,7 +40,7 @@ public class AddOrderService : IService<System.Guid, string>
 
     }
 
-    string productName = _sources.GetProductName();
+    string productName = source.GetProductName();
     var product = await _productRepository.GetProductAsync(productName, cancellationToken);
     if (product == null)
     {
@@ -50,7 +48,7 @@ public class AddOrderService : IService<System.Guid, string>
       return ResultType.Failure(message.ToString());
     }
 
-    int quantity = _sources.GetQuantity();
+    int quantity = source.GetQuantity();
 
     var result = _useCase.Execute(customerName, product, quantity);
 

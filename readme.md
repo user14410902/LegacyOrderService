@@ -18,7 +18,7 @@ You must
 1. Improve performance, resilience, scalability and testability
 1. Make decisions based on real-world engineering tradeoffs
 
-(Some definitions, in case you do not know:
+(Some english dictionary definitions, in case you do not know:
 Resilience = the ability to spring back to an original form after having been squeezed, stretched, etc.; the ability to recover quickly from illness, misfortune, troubles, or the like.
 Scalability = the ability of something, esp a computer system, to adapt to increased demands
 )
@@ -30,6 +30,8 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
 1. Search the code for TODO
 1. Add more unit tests e.g.
    1. OrderRepository GetAllOrders
+1. Flesh-out the API.
+1. Tidy up the console app program.cs (I think that is what I was supposed to do initially :) )
    
 # Project Structure
 
@@ -139,6 +141,10 @@ Localhost URLs (adjust port as required)
 1. Get all orders 
     1. `http://localhost:8080/api/order/getall`
     1. `curl -X GET http://localhost:8080/api/order/getall --verbose`
+1. Post a new order. Has basic validation.
+    1. `http://localhost:8080/api/order/create`
+    1. `curl -X POST --header "Accept: application/json" --header "Content-Type: application/json" --data '{"customerName":"Customer Name","productName":"Gadget","quantity": 5}' http://localhost:8080/api/order/create`
+`
 
 ## Tests
 
