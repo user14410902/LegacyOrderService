@@ -5,12 +5,19 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using OrderService.Common;
 using OrderService.Data;
 using OrderService.Data.Interfaces;
 using OrderService.Data.Repositories;
 using OrderService.Services;
 using OrderService.Services.AddOrder;
+using OrderService.Services.AddOrderCSV;
 using OrderService.UseCases;
+using OrderService.UseCases.Implementations;
+
+//TODO Revisite the Result<...> aliases used for the IService implementations.
+using ResultSingleOrder = OrderService.Common.Result<System.Guid, string>;
+using ResultCSV = OrderService.Common.Result<bool, System.Collections.Generic.List<string>>;
 
 namespace OrderService
 {
@@ -18,14 +25,100 @@ namespace OrderService
     {
         static async Task<int> Main(string[] args)
         {
+            var rootCommand = BuildRootCommand(args);
+            return rootCommand.Parse(args).Invoke();
+        }
 
+        private static async Task SeedDatabaseIfRequired(IServiceScope scope, ILogger logger, CancellationToken cancellationToken)
+        {
+            logger.LogInformation("Seeding database if required...");
+            var context = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
+            logger.LogInformation("Connection string: {ConnectionString}", context.Database.GetConnectionString());
+            await DbInitializer.Seed(context, cancellationToken);
+        }
 
-            //---------------------------------------------------------------------
+        private static HostApplicationBuilder BuildHostBase(string[] args, bool verbose)
+        {
+            var settings = new HostApplicationBuilderSettings
+            {
+                // Sets the content root to the directory where the app executable/assembly is located to be able to load the appsettings.json
+                ContentRootPath = AppContext.BaseDirectory,
+                Args = args
+            };
+            var builder = Host.CreateApplicationBuilder(settings);
+
+            string connectionString = builder.Configuration.GetConnectionString("Default")
+                      ?? throw new InvalidOperationException("Connection string 'Default' not found.");
+
+            builder.Logging.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Warning);
+            builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(connectionString));
+            builder.Services.AddMemoryCache();
+            builder.Services.AddScoped<IProductRepository, ProductRepository>();
+            builder.Services.AddScoped<CacheProductRepository>();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            builder.Services.AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>();
+
+            return builder;
+        }
+
+        private static IHost BuildHostInteractive(string[] arg, bool verbose)
+        {
+            var builder = BuildHostBase(arg, verbose);
+
+            builder.Services.AddScoped<IAddOrderSources, ConsoleAddOrderSources>()
+            .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>()
+            .AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>()
+            .AddScoped<IService<System.Guid, string>, AddOrderService>();
+
+            return builder.Build();
+        }
+
+        private static IHost BuildHostPassInValues(string[] arg, bool verbose,
+        string customerName, string productName, int quantity)
+        {
+            var builder = BuildHostBase(arg, verbose);
+
+            builder.Services.AddScoped<IAddOrderSources, CommanLineAddOrderSources>(
+                    x => new CommanLineAddOrderSources(customerName, productName, quantity))
+            .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>()
+            .AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>()
+            .AddScoped<AddOrderService>();
+
+            return builder.Build();
+        }
+
+        private static IHost BuilderHostCSV(string[] arg, bool verbose, FileInfo file)
+        {
+            var builder = BuildHostBase(arg, verbose);
+
+            builder.Services.AddScoped<IService<bool, List<string>>, AddOrderCSVService>();
+            builder.Services.AddScoped<ICSVRowSource,
+             CSVHelperRowSource>(x => new CSVHelperRowSource(file.FullName));
+
+            return builder.Build();
+
+        }
+
+        private static async Task ExecuteAsync<ResultType, ErrorType>(IHost host, Action<ILogger, Result<ResultType, ErrorType>> finalAction, CancellationToken cancellationToken)
+        {
+            using (IServiceScope scope = host.Services.CreateScope())
+            {
+                var logger = host.Services.GetRequiredService<ILogger<Program>>();
+
+                await SeedDatabaseIfRequired(scope, logger, cancellationToken);
+
+                var service = scope.ServiceProvider.GetRequiredService<IService<ResultType, ErrorType>>();
+                var result = await service.ExecuteAsync(cancellationToken);
+                finalAction(logger, result);
+            }
+        }
+
+        private static RootCommand BuildRootCommand(string[] args)
+        {
             var verboseOption = new Option<bool>("--verbose", "-v")
             {
                 Description = "Enable verbose console logging."
             };
-
 
             var customerNameArgument = new Argument<string>("customerName")
             {
@@ -42,18 +135,52 @@ namespace OrderService
             };
             quantityArgument.Validators.Add(result =>
             {
-                int value = result.GetValue<int>("quantity");//GetValueForArgument(ageArgument);
+                int value = result.GetValue<int>("quantity");
 
                 if (value <= 0)
                 {
                     result.AddError("Quantity must be a whole number greater or equal to 1.");
                 }
             });
+
+            var filenameArgument = new Argument<FileInfo>("filename")
+            {
+                Description = "Complete path and filename of the CSV file"
+            };
+            filenameArgument.Validators.Add(result =>
+            {
+                var file = result.GetValue<FileInfo>("filename");
+                if (file == null)
+                {
+                    result.AddError("Input file invalid.");
+                    return;
+                }
+                var fullname = file.FullName;
+
+                if (string.IsNullOrWhiteSpace(fullname) ||
+                fullname.IndexOfAny(Path.GetInvalidFileNameChars()) > 0 ||
+                 !File.Exists(fullname))
+                {
+                    result.AddError("Filename does not appear to be valid and/or the file does not exist.");
+                }
+            });
+
             var addOrderCommand = new Command("addOrder", "Add a new order")
             {
-                Arguments = { customerNameArgument, productNameArgument, quantityArgument }
+                Arguments = { customerNameArgument, productNameArgument, quantityArgument },
+                Options = { verboseOption }
             };
-            var addOrderInteractiveCommand = new Command("addOrderInteractive", "Add a new order using the console");
+            var addOrderInteractiveCommand = new Command("addOrderInteractive",
+             "Add a new order using the console")
+            {
+                Options = { verboseOption }
+            };
+
+            var addOrderCSVFileCommand = new Command("addOrderCSV", "Import orders through a CSV file.")
+            {
+                Arguments = { filenameArgument },
+                Options = { verboseOption }
+            };
 
             var rootCommand = new RootCommand("Welcome to Order Processor!")
             {
@@ -61,6 +188,7 @@ namespace OrderService
             };
             rootCommand.Subcommands.Add(addOrderCommand);
             rootCommand.Subcommands.Add(addOrderInteractiveCommand);
+            rootCommand.Subcommands.Add(addOrderCSVFileCommand);
 
             using var cts = new CancellationTokenSource();
             var cancellationToken = cts.Token;
@@ -71,75 +199,55 @@ namespace OrderService
                     var productName = parseResult.GetValue(productNameArgument)!;
                     var quantity = parseResult.GetValue(quantityArgument)!;
                     var verbose = parseResult.GetValue(verboseOption);
-                    var host = BuildHost(args, isInteractive: false, verbose,
+                    var host = BuildHostPassInValues(args, verbose,
                 customerName, productName, quantity);
-                    await ExecuteAsync(host, cancellationToken);
+                    await ExecuteAsync<Guid, String>(host, LogResult, cancellationToken);
                 });
 
             addOrderInteractiveCommand.SetAction(async parseResult =>
             {
                 var verbose = parseResult.GetValue(verboseOption);
-                var host = BuildHost(args, isInteractive: true, verbose);
-                await ExecuteAsync(host, cancellationToken);
+                var host = BuildHostInteractive(args, verbose);
+                await ExecuteAsync<Guid, String>(host, LogResult, cancellationToken);
             });
 
-            return rootCommand.Parse(args).Invoke();
+            addOrderCSVFileCommand.SetAction(async parseResult =>
+            {
+                var verbose = parseResult.GetValue(verboseOption);
+                var file = parseResult.GetValue(filenameArgument)!;
+                var host = BuilderHostCSV(args, verbose, file);
+                await ExecuteAsync<bool, List<string>>(host, LogResult, cancellationToken);
+            });
+
+            return rootCommand;
         }
 
-        private static async Task SeedDatabaseIfRequired(IServiceScope scope, ILogger logger, CancellationToken cancellationToken)
+        private static void LogResult(ILogger logger, ResultSingleOrder result)
         {
-            logger.LogInformation("Seeding database if required...");
-            var context = scope.ServiceProvider.GetRequiredService<OrderServiceDbContext>();
-            logger.LogInformation("Connection string: {ConnectionString}", context.Database.GetConnectionString());
-            await DbInitializer.Seed(context, cancellationToken);
-        }
-
-        private static IHost BuildHost(string[] args, bool isInteractive, bool verbose,
-        string customerName = null!, string productName = null!, int quantity = 0)
-        {
-            var settings = new HostApplicationBuilderSettings
+            if (result.IsSuccess)
             {
-                // Sets the content root to the directory where the app executable/assembly is located
-                ContentRootPath = AppContext.BaseDirectory,
-                Args = args
-            };
-            var builder = Host.CreateApplicationBuilder(settings);
-
-            string connectionString = builder.Configuration.GetConnectionString("Default")
-                      ?? throw new InvalidOperationException("Connection string 'Default' not found.");
-
-            builder.Logging.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Warning);
-            builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(connectionString));
-            builder.Services.AddMemoryCache();
-            builder.Services.AddScoped<IProductRepository, ProductRepository>();
-            builder.Services.AddScoped<CacheProductRepository>();
-            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-            if (isInteractive)
-            {
-                builder.Services.AddScoped<IAddOrderSources, ConsoleAddOrderSources>();
+                logger.LogInformation($"Order created sucessfully. New order ID: {result.Value}");
             }
             else
             {
-                builder.Services.AddScoped<IAddOrderSources, CommanLineAddOrderSources>(
-                    x => new CommanLineAddOrderSources(customerName, productName, quantity));
+                logger.LogError(result.Error);
             }
-            builder.Services.AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>();
-            builder.Services.AddScoped<AddOrderService>();
-
-            return builder.Build();
         }
 
-        private static async Task ExecuteAsync(IHost host, CancellationToken cancellationToken)
+        private static void LogResult(ILogger logger, ResultCSV result)
         {
-            using (IServiceScope scope = host.Services.CreateScope())
+            if (result.IsSuccess)
             {
-                var logger = host.Services.GetRequiredService<ILogger<Program>>();
-
-                await SeedDatabaseIfRequired(scope, logger, cancellationToken);
-
-                var service = scope.ServiceProvider.GetRequiredService<AddOrderService>();
-                await service.ExecuteAsync(cancellationToken);
+                logger.LogInformation("CSV file processed successfully.");
+            }
+            else
+            {
+                foreach (var error in result.Error!)
+                {
+                    logger.LogError("{error}", error);
+                }
             }
         }
+
     }
 }

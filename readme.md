@@ -26,6 +26,8 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
 # Ideas, Comments, etc.
 
 1. Order has a reference to Product: I assume no product will ever be physically deleted. Only soft deleting (which would need to be implemented, i.e. adding appropriate column(s)). That way the Order does not need to store the price which is on the Product. I prefer database redundancy.
+1. Check if the words "Entity" and "Model" are used consistently. E.g. for the database the word "model" is used. For the business logic the word "entity" is used. What is the convention?
+1. Search the code for TODO
    
 # Project Structure
 
@@ -34,7 +36,7 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
     1. **Makefile** Convenience Makefile with common `dotnet` commands.
     1. **readme.md** This file.
 1. **OrderService.ConsoleApp** C# console application. The original LegacyOrderService. See command line parameters below.
-1. **OrderService.Services** Class library with the at the moment only the AddOrderService which ... adds an order to the database.
+1. **OrderService.Services** Class library with the at the moment only the AddOrderService and AddCSVOrderService which ... adds an order or a CSV file of orders to the database.
 1. **OrderService.Common** Base library for all other projects.
 1. **OrderService.Entities** All business entities.
 1. **OrderService.UseCases** All use cases for the business entities.
@@ -96,14 +98,25 @@ Options:
 Commands:
   addOrder <customerName> <productName> <quantity>  Add a new order
   addOrderInteractive                               Add a new order using the console
-
+  addOrderCSV <filename>                            Import orders through a CSV file.
 ```
 
+### Creating an order from command line arguments
+
 `dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrder <CustomerName> <ProductName> <Quantity>`
+
 This will add the order for the customer and exit. If the product does not exist or the quantity is invalid and error will be displayed.
 
+### Creating an order interactively using the console (original LegacyOrderService)
 `dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderInteractive`
 This will run the original OrderService and allow the user to enter the order details through the console.
+
+### Importing orders from a CSV file
+`dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderCSV <filename>`
+This will run the OrderService and import orders from a CSV file. There are sample CSV files under `./OrderService.Services.Tests/sample_csv_files`. 
+
+Here is an example command to import one of the sample CSV files:
+`dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderCSV ./OrderService.Services.Tests/sample_csv_files/sample_all_valid_orders.csv`
 
 ## Tests
 

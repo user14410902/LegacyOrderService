@@ -25,4 +25,28 @@
     <ProjectReference Include="..\OrderService.Services\OrderService.Services.csproj" />
   </ItemGroup>
 
+    <ItemGroup>
+      <None Update="./sample_csv_files/sample_all_valid_orders.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="./sample_csv_files/sample_empty.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="./sample_csv_files/sample_missing_customer.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="./sample_csv_files/sample_missing_product.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="./sample_csv_files/sample_missing_quantity.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="./sample_csv_files/sample_negative_quantity.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="./sample_csv_files/sample_string_as_quantity.csv">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
 </Project>

@@ -7,8 +7,9 @@ using OrderService.Data.Interfaces;
 using OrderService.Data.Repositories;
 using OrderService.Entities;
 using OrderService.Services.AddOrder;
+using OrderService.UseCases.Implementations;
 
-namespace OrderService.Services.Tests;
+namespace OrderService.Services.Tests.AddOrder;
 
 public class AddOrderServiceTests
 {
@@ -66,11 +67,14 @@ public class AddOrderServiceTests
 
         var mockDisplay = NSubstitute.Substitute.For<IAddOrderDisplay>();
 
+        var useCase = new CreateOrderForCustomer();
+
         var target = new AddOrderService(logger,
         productRepository,
         orderRepository,
         mockSources,
-        mockDisplay);
+        mockDisplay,
+        useCase);
 
         using var cts = new CancellationTokenSource();
         var actualGuid = await target.ExecuteAsync(cts.Token);
@@ -101,21 +105,24 @@ public class AddOrderServiceTests
         mockSources.GetQuantity().Returns(quantity);
 
         var expectedGuid = Guid.NewGuid();
-        mockOrderRepository.SaveAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>())
+        mockOrderRepository.AddAndSaveSingleAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>())
         .Returns(expectedGuid);
+
+        var useCase = new CreateOrderForCustomer();
 
         var target = new AddOrderService(mockLogger,
         mockProductRepository,
         mockOrderRepository,
         mockSources,
-        mockDisplay);
+        mockDisplay,
+        useCase);
 
         using var cts = new CancellationTokenSource();
         var actualGuid = await target.ExecuteAsync(cts.Token);
 
         mockDisplay.Received(1).DisplayOrder(Arg.Any<Order>());
 
-        await mockOrderRepository.Received(1).SaveAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+        await mockOrderRepository.Received(1).AddAndSaveSingleAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
 
         Assert.That(actualGuid.Value, Is.EqualTo(expectedGuid));
     }

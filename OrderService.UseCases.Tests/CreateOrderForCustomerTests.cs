@@ -1,4 +1,5 @@
 ﻿using OrderService.Entities;
+using OrderService.UseCases.Implementations;
 
 #nullable enable
 
