@@ -37,6 +37,7 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
 1. Flesh-out the API.
 1. Tidy up the console app program.cs (I think that is what I was supposed to do initially :) )
 1. I changed double to decimal for price and total. I did this for accuracy and to avoid rounding errors.
+1. At the moment there is no CRUD for products ... as this is the OrderService and not the OrderAndProductService. But it might be useful to add that.
 
    
 # Project Structure
