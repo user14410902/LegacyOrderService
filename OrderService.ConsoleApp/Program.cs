@@ -14,10 +14,12 @@ using OrderService.Services.AddOrder;
 using OrderService.Services.AddOrderCSV;
 using OrderService.UseCases;
 using OrderService.UseCases.Implementations;
+using OrderService.Services.GetOrders;
 
 //TODO Revisite the Result<...> aliases used for the IService implementations.
 using ResultSingleOrder = OrderService.Common.Result<System.Guid, string>;
 using ResultCSV = OrderService.Common.Result<bool, System.Collections.Generic.List<string>>;
+using ResultGetOrders = OrderService.Common.Result<System.Collections.Generic.List<OrderService.Entities.Order>, string>;
 
 namespace OrderService
 {
@@ -39,19 +41,10 @@ namespace OrderService
 
         private static HostApplicationBuilder BuildHostBase(string[] args, bool verbose)
         {
-            var settings = new HostApplicationBuilderSettings
-            {
-                // Sets the content root to the directory where the app executable/assembly is located to be able to load the appsettings.json
-                ContentRootPath = AppContext.BaseDirectory,
-                Args = args
-            };
-            var builder = Host.CreateApplicationBuilder(settings);
-
-            string connectionString = builder.Configuration.GetConnectionString("Default")
-                      ?? throw new InvalidOperationException("Connection string 'Default' not found.");
+            var builder = Host.CreateApplicationBuilder(GetHostBuilderSettings(args));
 
             builder.Logging.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Warning);
-            builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(connectionString));
+            builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(GetConnectionString(builder)));
             builder.Services.AddMemoryCache();
             builder.Services.AddScoped<IProductRepository, ProductRepository>();
             builder.Services.AddScoped<CacheProductRepository>();
@@ -182,6 +175,11 @@ namespace OrderService
                 Options = { verboseOption }
             };
 
+            var showAllOrdersCommand = new Command("showAllOrders", "List all the orders on the command line.")
+            {
+                Options = { verboseOption }
+            };
+
             var rootCommand = new RootCommand("Welcome to Order Processor!")
             {
                 Options = { verboseOption }
@@ -189,6 +187,7 @@ namespace OrderService
             rootCommand.Subcommands.Add(addOrderCommand);
             rootCommand.Subcommands.Add(addOrderInteractiveCommand);
             rootCommand.Subcommands.Add(addOrderCSVFileCommand);
+            rootCommand.Subcommands.Add(showAllOrdersCommand);
 
             using var cts = new CancellationTokenSource();
             var cancellationToken = cts.Token;
@@ -219,9 +218,42 @@ namespace OrderService
                 await ExecuteAsync<bool, List<string>>(host, LogResult, cancellationToken);
             });
 
+            showAllOrdersCommand.SetAction(async parseResult =>
+            {
+                //TODO Maybe refactor here to avoid some of the code duplication.
+                var builder = Host.CreateApplicationBuilder(GetHostBuilderSettings(args));
+                var verbose = parseResult.GetValue(verboseOption);
+                builder.Logging.SetMinimumLevel(verbose ? LogLevel.Debug : LogLevel.Warning);
+                builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(GetConnectionString(builder)));
+                builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+                builder.Services.AddScoped<IService<List<Entities.Order>, string>, GetOrdersService>();
+
+                var host = builder.Build();
+
+                await ExecuteAsync<List<Entities.Order>, string>(host, LogResult, cancellationToken);
+
+            });
+
             return rootCommand;
         }
 
+        private static HostApplicationBuilderSettings GetHostBuilderSettings(string[] args)
+        {
+            return new HostApplicationBuilderSettings
+            {
+                // Sets the content root to the directory where the app executable/assembly is located to be able to load the appsettings.json
+                ContentRootPath = AppContext.BaseDirectory,
+                Args = args
+            };
+        }
+
+        private static string GetConnectionString(HostApplicationBuilder builder)
+        {
+            return builder.Configuration.GetConnectionString("Default")
+                 ?? throw new InvalidOperationException("Connection string 'Default' not found.");
+        }
+
+        //TODO Move LogResult methods somewhere else because the Program class is getting too big?
         private static void LogResult(ILogger logger, ResultSingleOrder result)
         {
             if (result.IsSuccess)
@@ -246,6 +278,21 @@ namespace OrderService
                 {
                     logger.LogError("{error}", error);
                 }
+            }
+        }
+
+        private static void LogResult(ILogger logger, ResultGetOrders result)
+        {
+            if (result.IsSuccess)
+            {
+                foreach (var order in result.Value)
+                {
+                    Console.WriteLine(order.ToString()); //yes, not using logger
+                }
+            }
+            else
+            {
+                Console.WriteLine(result.Error); //yes, not using logger
             }
         }
 

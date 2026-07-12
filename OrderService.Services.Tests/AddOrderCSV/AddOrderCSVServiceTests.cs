@@ -116,6 +116,11 @@ public class AddOrderCSVServiceTests
       throw new NotImplementedException();
     }
 
+    public Task<List<Order>> GetAllOrdersAsync(CancellationToken cancellationToken)
+    {
+      throw new NotImplementedException();
+    }
+
     public Task SaveAsync(CancellationToken cancellationToken)
     {
       CountCall_SaveAsync++;
