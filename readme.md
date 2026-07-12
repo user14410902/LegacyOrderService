@@ -43,9 +43,11 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
 1. **OrderService.Entities** All business entities.
 1. **OrderService.UseCases** All use cases for the business entities.
 1. **OrderService.Data** Database related code.
+1. **OrderService.API** Basic API. See below for details.
 1. **Database** Folder with the order.db database.
 1. There are NUnit test projects
     1. **OrderService.Data.Tests**
+    1. **OrderService.Services**
     1. **OrderService.UseCases.Tests**
 
 # Database
@@ -124,6 +126,19 @@ Here is an example command to import one of the sample CSV files:
 ### Show all orders
 `dotnet run --project OrderService.ConsoleApp/OrderService.csproj showAllOrders`
 This will output all orders to the console.
+
+## API
+This is a minimal minimal API in the OrderService.API project.
+
+To run the API
+`dotnet run --project OrderService.API/OrderService.API.csproj`
+
+Localhost URLs (adjust port as required)
+
+1. Swagger documentation `http://localhost:8080/swagger`
+1. Get all orders 
+    1. `http://localhost:8080/api/order/getall`
+    1. `curl -X GET http://localhost:8080/api/order/getall --verbose`
 
 ## Tests
 
