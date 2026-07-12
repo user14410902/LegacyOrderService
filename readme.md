@@ -1,6 +1,10 @@
 # LegacyOrderService
 Legacy order service that needs a good refactor.
 
+# Github links
+1. PRs (all closed): https://github.com/user14410902/LegacyOrderService/pulls?q=is%3Apr+is%3Aclosed
+1. Issues (all closed): https://github.com/user14410902/LegacyOrderService/issues?q=is%3Aissue%20state%3Aclosed 
+
 # Requirements
 
 (These are the original requirements.)
@@ -32,6 +36,8 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
    1. OrderRepository GetAllOrders
 1. Flesh-out the API.
 1. Tidy up the console app program.cs (I think that is what I was supposed to do initially :) )
+1. I changed double to decimal for price and total. I did this for accuracy and to avoid rounding errors.
+
    
 # Project Structure
 
