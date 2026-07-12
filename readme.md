@@ -4,6 +4,7 @@ Legacy order service that needs a good refactor.
 # Github links
 1. PRs (all closed): https://github.com/user14410902/LegacyOrderService/pulls?q=is%3Apr+is%3Aclosed
 1. Issues (all closed): https://github.com/user14410902/LegacyOrderService/issues?q=is%3Aissue%20state%3Aclosed 
+1. Project board: https://github.com/users/user14410902/projects/2
 
 # Requirements
 
@@ -159,15 +160,26 @@ Localhost URLs (adjust port as required)
 Runs all unit test projects.
 
 # FAQ
-## How to add a EF migration?
+
+## How to add the initial EF migration?
+Run this command from the solution folder.
+
+`dotnet ef migrations add InitialCreate --project OrderService.Data/OrderService.Data.csproj --startup-project OrderService.ConsoleApp/OrderService.csproj`
+
+The console app needs to have a reference to `Microsoft.EntityFrameworkCore.Design`.
+
+Ensure that you have `dotnet tool install --global dotnet-ef` CLI installed.
+
+And the data project needs to implement `IDesignTimeDbContextFactory` (see implementation in `OrderServiceDbContextFactory`) so that the migration tool knows how to build the dependency injection container.
+
+Remember this will use the default connection string defined in the console app's `appsettings.json` file. At it assumes the database was initially created using the migrations.
+
+
+## How to add a further EF migration?
 
 Run this command from the solution folder.
 
 `dotnet ef migrations add ProductSoftDelete --project OrderService.Data/OrderService.Data.csproj --startup-project OrderService.ConsoleApp/OrderService.csproj`
-
-The console app needs to have a reference to `Microsoft.EntityFrameworkCore.Design`.
-
-And the data project needs to implement `IDesignTimeDbContextFactory` (see implementation in `OrderServiceDbContextFactory`) so that the migration tool knows how to build the dependency injection container.
 
 ## How to update the database after adding a EF migration?
 
@@ -175,4 +187,14 @@ Run this command from the solution folder.
 
 `dotnet ef database update --project OrderService.Data/OrderService.Data.csproj --startup-project OrderService.ConsoleApp/OrderService.csproj`
 
-Remember this will use the default connection string defined in the console app's `appsettings.json` file. At it assumes the database was initially created using the migrations.
+## How to remove all migration and start the migrations fresh?
+
+Run this command from the solution folder.
+
+` dotnet ef database drop --force --project OrderService.Data/OrderService.Data.csproj --startup-project OrderService.ConsoleApp/OrderService.csproj`
+
+Then you can physically delete the `order.db` file (remember to close any Sqlite viewers beforehand.).
+
+Then physically delete the `migrations` folder in the OrderService.Data project.
+
+Now you should be able to create the first migration again.
