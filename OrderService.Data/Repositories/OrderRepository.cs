@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderService.Data;
@@ -13,6 +14,14 @@ public class OrderRepository : IOrderRepository
     public OrderRepository(OrderServiceDbContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    public async Task<List<Order>> GetAllOrdersAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.Orders
+        .Select(o => new Entities.Order(o.CustomerName,
+        Product: new Entities.Product(Id: o.Product!.Id, Name: o.Product.Name, Price: o.Product.Price), o.Quantity))
+        .ToListAsync(cancellationToken);
     }
 
     public void Add(Order entity)

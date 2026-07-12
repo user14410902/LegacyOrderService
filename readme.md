@@ -28,6 +28,8 @@ Scalability = the ability of something, esp a computer system, to adapt to incre
 1. Order has a reference to Product: I assume no product will ever be physically deleted. Only soft deleting (which would need to be implemented, i.e. adding appropriate column(s)). That way the Order does not need to store the price which is on the Product. I prefer database redundancy.
 1. Check if the words "Entity" and "Model" are used consistently. E.g. for the database the word "model" is used. For the business logic the word "entity" is used. What is the convention?
 1. Search the code for TODO
+1. Add more unit tests e.g.
+   1. OrderRepository GetAllOrders
    
 # Project Structure
 
@@ -99,6 +101,7 @@ Commands:
   addOrder <customerName> <productName> <quantity>  Add a new order
   addOrderInteractive                               Add a new order using the console
   addOrderCSV <filename>                            Import orders through a CSV file.
+  showAllOrders                                     List all the orders on the command line.
 ```
 
 ### Creating an order from command line arguments
@@ -117,6 +120,10 @@ This will run the OrderService and import orders from a CSV file. There are samp
 
 Here is an example command to import one of the sample CSV files:
 `dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderCSV ./OrderService.Services.Tests/sample_csv_files/sample_all_valid_orders.csv`
+
+### Show all orders
+`dotnet run --project OrderService.ConsoleApp/OrderService.csproj showAllOrders`
+This will output all orders to the console.
 
 ## Tests
 
