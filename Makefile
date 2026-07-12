@@ -14,6 +14,8 @@ watch:
 	dotnet watch --project OrderService.ConsoleApp/OrderService.csproj run
 run:
 	dotnet run --project OrderService.ConsoleApp/OrderService.csproj addOrderInteractive
+showAllOrders:
+	dotnet run --project OrderService.ConsoleApp/OrderService.csproj showAllOrders
 api:
 	dotnet run --project OrderService.API/OrderService.API.csproj
 api_watch:

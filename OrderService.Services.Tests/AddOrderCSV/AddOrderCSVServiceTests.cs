@@ -60,9 +60,9 @@ public class AddOrderCSVServiceTests
     var source = new CSVHelperRowSource(filePath);
     var useCase = new CreateOrderForCustomer();
 
-    var target = new AddOrderCSVService(logger, productRepository, orderRepository, source, useCase);
+    var target = new AddOrderCSVService(logger, productRepository, orderRepository, useCase);
 
-    var result = await target.ExecuteAsync(_cancellationToken);
+    var result = await target.ExecuteAsync(source, _cancellationToken);
 
     Assert.That(orderRepository.Orders.Count, Is.EqualTo(expectedOrders), "Expected number of orders is incorrect.");
     if (expectedErrors == 0)

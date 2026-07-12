@@ -2,11 +2,11 @@ using Microsoft.Extensions.Logging;
 
 namespace OrderService.Services.AddOrder;
 
-public class ConsoleAddOrderSources : IAddOrderSources
+public class ConsoleAddOrderSource : IAddOrderSource
 {
-  private readonly ILogger<ConsoleAddOrderSources> _logger;
+  private readonly ILogger<ConsoleAddOrderSource> _logger;
 
-  public ConsoleAddOrderSources(ILogger<ConsoleAddOrderSources> logger)
+  public ConsoleAddOrderSource(ILogger<ConsoleAddOrderSource> logger)
   {
     _logger = logger;
   }

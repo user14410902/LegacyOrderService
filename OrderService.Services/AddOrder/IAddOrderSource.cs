@@ -1,6 +1,6 @@
 namespace OrderService.Services.AddOrder;
 
-public interface IAddOrderSources
+public interface IAddOrderSource
 {
   public string GetCustomerName();
   public string GetProductName();

@@ -6,7 +6,10 @@ using OrderService.Data;
 using OrderService.Data.Interfaces;
 using OrderService.Data.Repositories;
 using OrderService.Services;
+using OrderService.Services.AddOrder;
 using OrderService.Services.GetOrders;
+using OrderService.Services.Interfaces;
+using OrderService.UseCases.Implementations;
 
 var builder = WebApplication.CreateBuilder();
 builder.Services.AddFastEndpoints();
@@ -16,8 +19,14 @@ var connectionString = builder.Configuration.GetConnectionString("Default")
                 ?? throw new InvalidOperationException("Connection string 'Default' not found.");
 
 builder.Services.AddDbContext<OrderServiceDbContext>(options => options.UseSqlite(connectionString));
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<CacheProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IService<List<OrderService.Entities.Order>, string>, GetOrdersService>();
+builder.Services.AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>();
+builder.Services.AddScoped<IOrderRetrievalService, GetOrdersService>();
+builder.Services.AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>();
+builder.Services.AddScoped<IOrderCreationService, AddOrderService>();
 
 var app = builder.Build();
 app.UseFastEndpoints();

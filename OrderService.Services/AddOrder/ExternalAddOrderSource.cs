@@ -2,7 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace OrderService.Services.AddOrder;
 
-public class CommanLineAddOrderSources(string customerName, string productName, int quantity) : IAddOrderSources
+public class ExternalAddOrderSource(string customerName, string productName, int quantity) : IAddOrderSource
 {
   private readonly string customerName = customerName;
   private readonly string productName = productName;
