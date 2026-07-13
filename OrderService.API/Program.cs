@@ -5,10 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using OrderService.Data;
 using OrderService.Data.Interfaces;
 using OrderService.Data.Repositories;
-using OrderService.Services;
-using OrderService.Services.AddOrder;
-using OrderService.Services.GetOrders;
-using OrderService.Services.Interfaces;
+using OrderService.Services.AddOrders.Display;
+using OrderService.Services.Services;
 using OrderService.UseCases.Implementations;
 
 var builder = WebApplication.CreateBuilder();
@@ -26,7 +24,7 @@ builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>();
 builder.Services.AddScoped<IOrderRetrievalService, GetOrdersService>();
 builder.Services.AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>();
-builder.Services.AddScoped<IOrderCreationService, AddOrderService>();
+builder.Services.AddScoped<IOrdersCreationService, AddOrdersService>();
 
 var app = builder.Build();
 app.UseFastEndpoints();

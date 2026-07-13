@@ -1,6 +1,6 @@
 using OrderService.Entities;
 
-namespace OrderService.Services.AddOrder;
+namespace OrderService.Services.AddOrders.Display;
 
 public interface IAddOrderDisplay
 {
