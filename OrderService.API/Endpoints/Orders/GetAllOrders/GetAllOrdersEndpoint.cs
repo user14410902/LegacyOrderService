@@ -1,9 +1,6 @@
-using FastEndpoints;
 using Microsoft.AspNetCore.Http.HttpResults;
 using OrderService.API.Responses.Orders.GetAllOrders;
-using OrderService.Services;
-using OrderService.Services.GetOrders;
-using OrderService.Services.Interfaces;
+using OrderService.Services.Services;
 namespace OrderService.API.Endpoints.Orders.GetAllOrders;
 
 public class GetAllOrdersEndpoint : EndpointWithoutRequest<Results<Ok<List<OrderResponse>>, ProblemDetails>>

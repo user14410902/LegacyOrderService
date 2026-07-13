@@ -1,8 +1,7 @@
 using OrderService.Common;
 using OrderService.Entities;
-using OrderService.Services.AddOrder;
 
-namespace OrderService.Services.Interfaces;
+namespace OrderService.Services.Services;
 
 public interface IOrderRetrievalService
 {

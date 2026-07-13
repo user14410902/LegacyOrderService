@@ -6,12 +6,14 @@ using OrderService.Data;
 using OrderService.Data.Interfaces;
 using OrderService.Data.Repositories;
 using OrderService.Entities;
-using OrderService.Services.AddOrder;
+using OrderService.Services.AddOrders.Display;
+using OrderService.Services.Services;
+using OrderService.Services.Sources;
 using OrderService.UseCases.Implementations;
 
-namespace OrderService.Services.Tests.AddOrder;
+namespace OrderService.Services.Tests.AddOrders;
 
-public class AddOrderServiceTests
+public class AddOrderService_SingleOrder_Tests
 {
 
     private ServiceProvider _serviceProvider;
@@ -53,43 +55,47 @@ public class AddOrderServiceTests
         using var scope = _serviceProvider.CreateScope();
         var cacheProductRepository = scope.ServiceProvider.GetRequiredService<CacheProductRepository>();
 
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<AddOrderService>>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<AddOrdersService>>();
         var productRepository = scope.ServiceProvider.GetRequiredService<IProductRepository>();
         var orderRepository = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
 
         var customerName = "CustomerName";
         string productName = "Doohickey";
         var quantity = 1;
-        var mockSource = NSubstitute.Substitute.For<IAddOrderSource>();
-        mockSource.GetCustomerName().Returns(customerName);
-        mockSource.GetProductName().Returns(productName);
-        mockSource.GetQuantity().Returns(quantity);
+        var mockSource = NSubstitute.Substitute.For<IRowsSource>();
+        mockSource.Rows.Returns(new List<OrderRow> {
+            new OrderRow {
+                CustomerName = customerName,
+                ProductName = productName,
+                Quantity =quantity }
+        });
 
         var mockDisplay = NSubstitute.Substitute.For<IAddOrderDisplay>();
 
         var useCase = new CreateOrderForCustomer();
 
-        var target = new AddOrderService(logger,
+        var target = new AddOrdersService(logger,
         productRepository,
         orderRepository,
-        mockDisplay,
-        useCase);
+        useCase,
+        mockDisplay);
 
         using var cts = new CancellationTokenSource();
-        var actualGuid = await target.ExecuteAsync(mockSource, cts.Token);
+        var actualResult = await target.ExecuteAsync(mockSource, cts.Token);
 
-        Assert.That(actualGuid.IsSuccess, Is.True, "Expecting the result to be true.");
-        Assert.That(actualGuid.Value, Is.Not.EqualTo(Guid.Empty), "Actual Guid ID of the new row is not valid.");
+        Assert.That(actualResult.IsSuccess, Is.True, "Expecting IsSuccess to be true.");
+        Assert.That(actualResult.Value, Is.True, "Expecting the result to be true.");
+        Assert.That(actualResult.Error, Is.Null, "Expecting no errors.");
 
     }
 
     [Test]
     public async Task TestFlowWithMocks()
     {
-        var mockLogger = NSubstitute.Substitute.For<ILogger<AddOrderService>>();
+        var mockLogger = NSubstitute.Substitute.For<ILogger<AddOrdersService>>();
         var mockProductRepository = NSubstitute.Substitute.For<IProductRepository>();
         var mockOrderRepository = NSubstitute.Substitute.For<IOrderRepository>();
-        var mockSource = NSubstitute.Substitute.For<IAddOrderSource>();
+        var mockSource = NSubstitute.Substitute.For<IRowsSource>();
         var mockDisplay = NSubstitute.Substitute.For<IAddOrderDisplay>();
 
         string productName = "product name";
@@ -99,29 +105,32 @@ public class AddOrderServiceTests
 
         var customerName = "CustomerName";
         var quantity = 1;
-        mockSource.GetCustomerName().Returns(customerName);
-        mockSource.GetProductName().Returns(productName);
-        mockSource.GetQuantity().Returns(quantity);
+        mockSource.Rows.Returns(new List<OrderRow> {
+            new OrderRow {
+                CustomerName = customerName,
+                ProductName = productName,
+                Quantity =quantity }
+        });
 
         var expectedGuid = Guid.NewGuid();
-        mockOrderRepository.AddAndSaveSingleAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>())
-        .Returns(expectedGuid);
+        mockOrderRepository.Add(Arg.Any<Order>());
 
         var useCase = new CreateOrderForCustomer();
 
-        var target = new AddOrderService(mockLogger,
+        var target = new AddOrdersService(mockLogger,
         mockProductRepository,
         mockOrderRepository,
-        mockDisplay,
-        useCase);
+        useCase,
+        mockDisplay);
 
         using var cts = new CancellationTokenSource();
         var actualGuid = await target.ExecuteAsync(mockSource, cts.Token);
 
         mockDisplay.Received(1).DisplayOrder(Arg.Any<Order>());
 
-        await mockOrderRepository.Received(1).AddAndSaveSingleAsync(Arg.Any<Order>(), Arg.Any<CancellationToken>());
+        mockOrderRepository.Received(1).Add(Arg.Any<Order>());
+        await mockOrderRepository.Received(1).SaveAsync(Arg.Any<CancellationToken>());
 
-        Assert.That(actualGuid.Value, Is.EqualTo(expectedGuid));
+
     }
 }

@@ -1,35 +1,36 @@
-using System.Globalization;
-using CsvHelper.Configuration;
 using Microsoft.Extensions.Logging;
 using OrderService.Common;
 using OrderService.Data.Interfaces;
-using OrderService.Services.Interfaces;
-using OrderService.UseCases;
+using OrderService.Services.AddOrders.Display;
+using OrderService.Services.Sources;
 using OrderService.UseCases.Implementations;
 
 using ResultType = OrderService.Common.Result<bool, System.Collections.Generic.List<string>>;
 
-namespace OrderService.Services.AddOrderCSV;
+namespace OrderService.Services.Services;
 
-public class AddOrderCSVService : IOrderCSVCreationService
+public class AddOrdersService : IOrdersCreationService
 {
-  private readonly ILogger<AddOrderCSVService> _logger;
+  private readonly ILogger<AddOrdersService> _logger;
   private readonly IProductRepository _productRepository;
   private readonly IOrderRepository _orderRepository;
   private readonly ICreateOrderForCustomer _useCase;
+  private readonly IAddOrderDisplay _display;
 
-  public AddOrderCSVService(ILogger<AddOrderCSVService> logger,
+  public AddOrdersService(ILogger<AddOrdersService> logger,
   IProductRepository productRepository,
   IOrderRepository orderRepository,
-  ICreateOrderForCustomer useCase)
+  ICreateOrderForCustomer useCase,
+  IAddOrderDisplay display)
   {
     _logger = logger;
     _productRepository = productRepository;
     _orderRepository = orderRepository;
     _useCase = useCase;
+    _display = display;
   }
 
-  public async Task<ResultType> ExecuteAsync(ICSVRowSource source, CancellationToken cancellationToken)
+  public async Task<ResultType> ExecuteAsync(IRowsSource source, CancellationToken cancellationToken)
   {
 
     try
@@ -55,19 +56,21 @@ public class AddOrderCSVService : IOrderCSVCreationService
         }
 
         Result<Entities.Order, string> result;
-        if (int.TryParse(row.Quantity, out int quantity))
+        if (row.Quantity > 0)
         {
-          result = _useCase.Execute(row.CustomerName, product, quantity);
+          result = _useCase.Execute(row.CustomerName, product, row.Quantity);
         }
         else
         {
-          result = Result<Entities.Order, string>.Failure($"Failed to parse quantity: {row.Quantity}");
+          result = Result<Entities.Order, string>.Failure($"Row {rowIndex}. Quantity must greater zero.");
         }
 
         if (result.IsSuccess)
         {
           _orderRepository.Add(result.Value);
           saveOrders = true;
+
+          _display.DisplayOrder(result.Value);
         }
         else
         {
@@ -107,7 +110,7 @@ public class AddOrderCSVService : IOrderCSVCreationService
     catch (System.IO.FileNotFoundException e)
     {
       return ResultType.Failure(new List<String> {
-        $"File not found {source.SourceDescription}. Error message: {e.Message}" });
+        $"Error reading from {source.SourceDescription}. Error message: {e.Message}" });
     }
   }
 }

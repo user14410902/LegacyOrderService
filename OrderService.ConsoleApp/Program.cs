@@ -9,18 +9,15 @@ using OrderService.Common;
 using OrderService.Data;
 using OrderService.Data.Interfaces;
 using OrderService.Data.Repositories;
-using OrderService.Services;
-using OrderService.Services.AddOrder;
-using OrderService.Services.AddOrderCSV;
+using OrderService.Services.AddOrders.Display;
+using OrderService.Services.Services;
+using OrderService.Services.Sources;
 using OrderService.UseCases;
 using OrderService.UseCases.Implementations;
-using OrderService.Services.GetOrders;
 
 //TODO Revisite the Result<...> aliases used for the IService implementations.
-using ResultSingleOrder = OrderService.Common.Result<System.Guid, string>;
-using ResultCSV = OrderService.Common.Result<bool, System.Collections.Generic.List<string>>;
+using Result = OrderService.Common.Result<bool, System.Collections.Generic.List<string>>;
 using ResultGetOrders = OrderService.Common.Result<System.Collections.Generic.List<OrderService.Entities.Order>, string>;
-using OrderService.Services.Interfaces;
 
 namespace OrderService
 {
@@ -51,6 +48,7 @@ namespace OrderService
             builder.Services.AddScoped<CacheProductRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>();
+            builder.Services.AddScoped<IOrdersCreationService, AddOrdersService>();
 
             return builder;
         }
@@ -58,12 +56,9 @@ namespace OrderService
         private static IHost BuildHostInteractive(string[] arg, bool verbose)
         {
             var builder = BuildHostBase(arg, verbose);
-
-            builder.Services.AddScoped<IAddOrderSource, ConsoleAddOrderSource>()
-            .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>()
-            .AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>()
-            .AddScoped<IOrderCreationService, AddOrderService>();
-
+            builder.Services
+            .AddScoped<IRowsSource, ConsoleRowSource>()
+            .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>();
             return builder.Build();
         }
 
@@ -71,44 +66,38 @@ namespace OrderService
         string customerName, string productName, int quantity)
         {
             var builder = BuildHostBase(arg, verbose);
-
-            builder.Services.AddScoped<IAddOrderSource, ExternalAddOrderSource>(
-                    x => new ExternalAddOrderSource(customerName, productName, quantity))
-            .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>()
-            .AddScoped<ICreateOrderForCustomer, CreateOrderForCustomer>()
-            .AddScoped<IOrderCreationService, AddOrderService>();
-
+            builder.Services
+            .AddScoped<IRowsSource, ExternalRowSource>(
+                    x => new ExternalRowSource(customerName, productName, quantity)
+                    {
+                        SourceDescription = "Command Line"
+                    })
+            .AddScoped<IAddOrderDisplay, ConsoleAddOrderDisplay>();
             return builder.Build();
         }
 
         private static IHost BuilderHostCSV(string[] arg, bool verbose, FileInfo file)
         {
             var builder = BuildHostBase(arg, verbose);
-            builder.Services.AddScoped<IOrderCSVCreationService, AddOrderCSVService>();
-            builder.Services.AddScoped<ICSVRowSource, CSVHelperRowSource>(x => new CSVHelperRowSource(file.FullName));
+            builder.Services
+            .AddScoped<IAddOrderDisplay, LoggerAddOrderDisplay>()
+            .AddScoped<IRowsSource, CSVHelperRowSource>(x => new CSVHelperRowSource(file.FullName));
             return builder.Build();
-
         }
 
         private static async Task ExecuteAsync<ResultType, ErrorType>(
             IHost host,
-            Func<IServiceProvider, ILogger, CancellationToken, Task> executeActionAsync,
             CancellationToken cancellationToken)
         {
             using (IServiceScope scope = host.Services.CreateScope())
             {
                 var logger = host.Services.GetRequiredService<ILogger<Program>>();
                 await SeedDatabaseIfRequired(scope, logger, cancellationToken);
-                await executeActionAsync(scope.ServiceProvider, logger, cancellationToken);
+                var service = host.Services.GetRequiredService<IOrdersCreationService>();
+                var source = host.Services.GetRequiredService<IRowsSource>();
+                var result = await service.ExecuteAsync(source, cancellationToken);
+                LogResult(logger, result);
             }
-        }
-
-        private static async Task ExecuteOrderCreationAsync(IServiceProvider serviceProvider, ILogger logger, CancellationToken cancellationToken)
-        {
-            var service = serviceProvider.GetRequiredService<IOrderCreationService>();
-            var source = serviceProvider.GetRequiredService<IAddOrderSource>();
-            var result = await service.ExecuteAsync(source, cancellationToken);
-            LogResult(logger, result);
         }
 
         private static RootCommand BuildRootCommand(string[] args)
@@ -206,14 +195,14 @@ namespace OrderService
                     var host = BuildHostPassInValues(args, verbose,
                 customerName, productName, quantity);
 
-                    await ExecuteAsync<Guid, String>(host, ExecuteOrderCreationAsync, cancellationToken);
+                    await ExecuteAsync<Guid, String>(host, cancellationToken);
                 });
 
             addOrderInteractiveCommand.SetAction(async parseResult =>
             {
                 var verbose = parseResult.GetValue(verboseOption);
                 var host = BuildHostInteractive(args, verbose);
-                await ExecuteAsync<Guid, String>(host, ExecuteOrderCreationAsync, cancellationToken);
+                await ExecuteAsync<Guid, String>(host, cancellationToken);
             });
 
             addOrderCSVFileCommand.SetAction(async parseResult =>
@@ -221,14 +210,7 @@ namespace OrderService
                 var verbose = parseResult.GetValue(verboseOption);
                 var file = parseResult.GetValue(filenameArgument)!;
                 var host = BuilderHostCSV(args, verbose, file);
-                await ExecuteAsync<bool, List<string>>(host,
-                     async (serviceProvider, logger, cancellationToken) =>
-                        {
-                            var service = serviceProvider.GetRequiredService<IOrderCSVCreationService>();
-                            var source = serviceProvider.GetRequiredService<ICSVRowSource>();
-                            var result = await service.ExecuteAsync(source, cancellationToken);
-                            LogResult(logger, result);
-                        }, cancellationToken);
+                await ExecuteAsync<bool, List<string>>(host, cancellationToken);
             });
 
             showAllOrdersCommand.SetAction(async parseResult =>
@@ -243,13 +225,14 @@ namespace OrderService
 
                 var host = builder.Build();
 
-                await ExecuteAsync<List<Entities.Order>, string>(host,
-                     async (serviceProvider, logger, cancellationToken) =>
-                        {
-                            var service = serviceProvider.GetRequiredService<IOrderRetrievalService>();
-                            var result = await service.ExecuteAsync(cancellationToken);
-                            LogResult(logger, result);
-                        }, cancellationToken);
+                using (IServiceScope scope = host.Services.CreateScope())
+                {
+                    var logger = host.Services.GetRequiredService<ILogger<Program>>();
+                    await SeedDatabaseIfRequired(scope, logger, cancellationToken);
+                    var service = host.Services.GetRequiredService<IOrderRetrievalService>();
+                    var result = await service.ExecuteAsync(cancellationToken);
+                    LogResult(logger, result);
+                }
 
             });
 
@@ -272,24 +255,12 @@ namespace OrderService
                  ?? throw new InvalidOperationException("Connection string 'Default' not found.");
         }
 
-        //TODO Move LogResult methods somewhere else because the Program class is getting too big?
-        private static void LogResult(ILogger logger, ResultSingleOrder result)
-        {
-            if (result.IsSuccess)
-            {
-                logger.LogInformation($"Order created sucessfully. New order ID: {result.Value}");
-            }
-            else
-            {
-                logger.LogError(result.Error);
-            }
-        }
 
-        private static void LogResult(ILogger logger, ResultCSV result)
+        private static void LogResult(ILogger logger, Result result)
         {
             if (result.IsSuccess)
             {
-                logger.LogInformation("CSV file processed successfully.");
+                logger.LogInformation("Processed successfully.");
             }
             else
             {

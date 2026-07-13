@@ -1,15 +1,27 @@
 using Microsoft.Extensions.Logging;
 
-namespace OrderService.Services.AddOrder;
+namespace OrderService.Services.Sources;
 
-public class ConsoleAddOrderSource : IAddOrderSource
+public class ConsoleRowSource(ILogger<ConsoleRowSource> logger) : IRowsSource
 {
-  private readonly ILogger<ConsoleAddOrderSource> _logger;
+  private readonly ILogger<ConsoleRowSource> _logger = logger;
 
-  public ConsoleAddOrderSource(ILogger<ConsoleAddOrderSource> logger)
+  public IEnumerable<OrderRow> Rows
   {
-    _logger = logger;
+    get
+    {
+      var customerName = GetString("Enter customer name:", "Customer name is null or empty. A valid customer name is required.");
+      var productName = GetString("Enter product name:", "Product name is null or empty. A valid product name is required.");
+      var quantity = GetQuantity();
+
+      //TODO HACK! Quantity is converted to a string !!!
+      return [new OrderRow { CustomerName = customerName, ProductName = productName, Quantity = quantity }];
+
+    }
   }
+
+  public string SourceDescription => "Console";
+
   public string GetCustomerName()
   {
     return GetString("Enter customer name:", "Customer name is null or empty. A valid customer name is required.");
@@ -53,4 +65,5 @@ public class ConsoleAddOrderSource : IAddOrderSource
     }
     return value;
   }
+
 }

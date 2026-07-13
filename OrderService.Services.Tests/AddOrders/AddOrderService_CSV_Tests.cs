@@ -2,12 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderService.Data.Interfaces;
 using OrderService.Entities;
-using OrderService.Services.AddOrderCSV;
+using OrderService.Services.AddOrders.Display;
+using OrderService.Services.Services;
+using OrderService.Services.Sources;
 using OrderService.UseCases.Implementations;
 
-namespace OrderService.Services.Tests.AddOrderCSV;
+namespace OrderService.Services.Tests.AddOrders;
 
-public class AddOrderCSVServiceTests
+public class AddOrderService_CSV_Tests
 {
 
   private ServiceProvider _serviceProvider;
@@ -24,12 +26,9 @@ public class AddOrderCSVServiceTests
     _serviceProvider = new ServiceCollection()
           .AddScoped<IProductRepository, TestProductRepository>()
           .AddScoped<IOrderRepository, TestOrderRepository>()
-    .AddMemoryCache()
-    .AddLogging()
-.BuildServiceProvider();
-
-    using var scope = _serviceProvider.CreateScope();
-
+          .AddMemoryCache()
+          .AddLogging()
+          .BuildServiceProvider();
   }
 
   [TearDown]
@@ -54,13 +53,14 @@ public class AddOrderCSVServiceTests
     string filePath = Path.Combine(testDirectory, filename);
 
     using var scope = _serviceProvider.CreateScope();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<AddOrderCSVService>>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<AddOrdersService>>();
     var productRepository = new TestProductRepository();
     var orderRepository = new TestOrderRepository();
     var source = new CSVHelperRowSource(filePath);
+    var display = new LoggerAddOrderDisplay(scope.ServiceProvider.GetRequiredService<ILogger<LoggerAddOrderDisplay>>());
     var useCase = new CreateOrderForCustomer();
 
-    var target = new AddOrderCSVService(logger, productRepository, orderRepository, useCase);
+    var target = new AddOrdersService(logger, productRepository, orderRepository, useCase, display);
 
     var result = await target.ExecuteAsync(source, _cancellationToken);
 
@@ -128,10 +128,5 @@ public class AddOrderCSVServiceTests
     }
   }
 
-  private class TestSource : ICSVRowSource
-  {
-    public IEnumerable<CSVOrderRow> Rows => throw new NotImplementedException();
 
-    public string SourceDescription => throw new NotImplementedException();
-  }
 }
